@@ -22,6 +22,7 @@ import {
 import { useApp } from '@/context/AppContext';
 import { ProgressRing } from './ProgressRing';
 import { DeviceSync } from './DeviceSync';
+import { InfoPopup } from './InfoPopup';
 
 // Principles with Lucide icons
 const principles = [
@@ -167,12 +168,19 @@ export function Settings() {
         <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Users size={20} className="text-[var(--system-blue)]" />
-            <div>
-              <span className="block text-[var(--foreground)]">Portionen</span>
-              <span className="text-xs text-[var(--foreground-tertiary)]">
-                Skaliert alle Mengenangaben
-              </span>
-            </div>
+            <span className="text-[var(--foreground)]">Portionen</span>
+            <InfoPopup title="Portionen" iconColor="var(--system-blue)">
+              <p className="mb-3">
+                Die Portionseinstellung passt automatisch alle Mengenangaben in den Rezepten und der Einkaufsliste an.
+              </p>
+              <p className="mb-3">
+                <strong>Evidenzbasierte Skalierung:</strong>
+              </p>
+              <ul className="list-inside list-disc space-y-1">
+                <li>Hauptzutaten werden linear skaliert</li>
+                <li>Gewürze werden sublinear berechnet (du brauchst nicht doppelt so viel Salz für 2 Personen)</li>
+              </ul>
+            </InfoPopup>
           </div>
           <select
             value={progress.preferences.servings}
@@ -194,12 +202,20 @@ export function Settings() {
         <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Timer size={20} className="text-[var(--system-orange)]" />
-            <div>
-              <span className="block text-[var(--foreground)]">Zubereitungszeit</span>
-              <span className="text-xs text-[var(--foreground-tertiary)]">
-                Warnt bei längeren Gerichten
-              </span>
-            </div>
+            <span className="text-[var(--foreground)]">Zubereitungszeit</span>
+            <InfoPopup title="Zubereitungszeit" iconColor="var(--system-orange)">
+              <p className="mb-3">
+                Wenn ein Gericht länger dauert als deine Präferenz, siehst du eine Warnung mit einer schnelleren Alternative.
+              </p>
+              <p className="mb-3">
+                <strong>Optionen:</strong>
+              </p>
+              <ul className="list-inside list-disc space-y-1">
+                <li><strong>≤12 Min:</strong> Für sehr schnelle Mahlzeiten</li>
+                <li><strong>≤25 Min:</strong> Standard-Kochzeit für Alltagsgerichte</li>
+                <li><strong>Unbegrenzt:</strong> Keine Warnungen</li>
+              </ul>
+            </InfoPopup>
           </div>
           <select
             value={progress.preferences.prepTimePreference}
@@ -218,12 +234,12 @@ export function Settings() {
         <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <RefreshCw size={20} className="text-[var(--system-teal)]" />
-            <div>
-              <span className="block text-[var(--foreground)]">Auto-Sync Filter</span>
-              <span className="text-xs text-[var(--foreground-tertiary)]">
-                Einkaufsliste folgt Mahlzeit-Tab
-              </span>
-            </div>
+            <span className="text-[var(--foreground)]">Auto-Sync</span>
+            <InfoPopup title="Auto-Sync Filter" iconColor="var(--system-teal)">
+              <p>
+                Wenn aktiviert, wechselt die Einkaufsliste automatisch zwischen Frühstück und Abendessen, je nachdem welchen Tab du im Wochenplan ausgewählt hast.
+              </p>
+            </InfoPopup>
           </div>
           <button
             onClick={() => updatePreferences({ autoSyncShoppingFilter: !progress.preferences.autoSyncShoppingFilter })}
