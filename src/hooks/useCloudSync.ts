@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, getDeviceId, setDeviceId } from '@/lib/supabase';
+import { supabase, getDeviceId, setDeviceId, isSupabaseAvailable } from '@/lib/supabase';
 import { UserProgress, UserPreferences } from '@/types';
 
 const defaultPreferences: UserPreferences = {
@@ -23,6 +23,23 @@ const defaultProgress: UserProgress = {
   mealNotes: [],
   customShoppingItems: [],
 };
+
+// Safe localStorage access
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeLocalStorageSet(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore localStorage errors
+  }
+}
 
 interface CloudSyncReturn {
   progress: UserProgress;
@@ -49,6 +66,30 @@ export function useCloudSync(): CloudSyncReturn {
     setCurrentDeviceId(deviceId);
     setSyncStatus('syncing');
 
+    // Check if Supabase is available
+    if (!isSupabaseAvailable() || !supabase) {
+      // Fallback to localStorage only
+      console.warn('Supabase not available, using localStorage only');
+      try {
+        const localData = safeLocalStorageGet('meal-planner-progress');
+        if (localData) {
+          const parsed = JSON.parse(localData);
+          setProgressState({
+            ...defaultProgress,
+            ...parsed,
+            ingredientCustomizations: parsed.ingredientCustomizations || [],
+            mealNotes: parsed.mealNotes || [],
+            customShoppingItems: parsed.customShoppingItems || [],
+          });
+        }
+        setSyncStatus('offline');
+      } catch {
+        setSyncStatus('offline');
+      }
+      setIsLoaded(true);
+      return;
+    }
+
     // Fetch from Supabase
     try {
       const { data, error } = await supabase
@@ -74,7 +115,7 @@ export function useCloudSync(): CloudSyncReturn {
           customShoppingItems: data.custom_shopping_items || [],
         };
         setProgressState(cloudProgress);
-        localStorage.setItem('meal-planner-progress', JSON.stringify(cloudProgress));
+        safeLocalStorageSet('meal-planner-progress', JSON.stringify(cloudProgress));
         setSyncStatus('synced');
       } else {
         // No data found for this device, use defaults
@@ -87,7 +128,7 @@ export function useCloudSync(): CloudSyncReturn {
 
       // Try to load from localStorage as fallback
       try {
-        const localData = localStorage.getItem('meal-planner-progress');
+        const localData = safeLocalStorageGet('meal-planner-progress');
         if (localData) {
           const parsed = JSON.parse(localData);
           // Ensure new fields exist
@@ -123,6 +164,12 @@ export function useCloudSync(): CloudSyncReturn {
   // Sync to cloud
   const syncToCloud = useCallback(async (newProgress: UserProgress) => {
     if (!deviceIdRef.current || isSyncing.current) return;
+
+    // Skip cloud sync if Supabase is not available
+    if (!isSupabaseAvailable() || !supabase) {
+      setSyncStatus('offline');
+      return;
+    }
 
     isSyncing.current = true;
     setSyncStatus('syncing');
@@ -163,12 +210,8 @@ export function useCloudSync(): CloudSyncReturn {
     setProgressState((prev) => {
       const newProgress = value instanceof Function ? value(prev) : value;
 
-      // Save to localStorage immediately
-      try {
-        localStorage.setItem('meal-planner-progress', JSON.stringify(newProgress));
-      } catch (e) {
-        console.warn('Failed to save to localStorage:', e);
-      }
+      // Save to localStorage immediately (safe version)
+      safeLocalStorageSet('meal-planner-progress', JSON.stringify(newProgress));
 
       // Sync to cloud
       syncToCloud(newProgress);

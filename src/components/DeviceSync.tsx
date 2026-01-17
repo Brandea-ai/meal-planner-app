@@ -13,11 +13,22 @@ interface DeviceSyncProps {
 
 export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
   const [mode, setMode] = useState<'choose' | 'show' | 'scan' | 'info'>('choose');
-  const [deviceId] = useState(() => getDeviceId());
+  // Initialize with empty string to avoid SSR hydration mismatch
+  const [deviceId, setDeviceId] = useState<string>('');
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-scanner-container';
+
+  // Load deviceId after client-side hydration to prevent SSR mismatch
+  useEffect(() => {
+    setIsMounted(true);
+    const id = getDeviceId();
+    if (id) {
+      setDeviceId(id);
+    }
+  }, []);
 
   useEffect(() => {
     // Cleanup scanner on unmount
@@ -32,12 +43,43 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
     setScanError(null);
     setIsScanning(true);
 
+    // Wait for container to be rendered
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Check if container exists
+    const container = document.getElementById(scannerContainerId);
+    if (!container) {
+      setScanError('Scanner konnte nicht initialisiert werden.');
+      setIsScanning(false);
+      return;
+    }
+
     try {
       const html5QrCode = new Html5Qrcode(scannerContainerId);
       scannerRef.current = html5QrCode;
 
+      // Try to get available cameras first
+      let cameraConfig: { facingMode: string } | string = { facingMode: 'environment' };
+
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+          // Prefer back camera if available
+          const backCamera = cameras.find(c =>
+            c.label.toLowerCase().includes('back') ||
+            c.label.toLowerCase().includes('rear') ||
+            c.label.toLowerCase().includes('environment')
+          );
+          if (backCamera) {
+            cameraConfig = backCamera.id;
+          }
+        }
+      } catch {
+        // Use default facing mode if camera enumeration fails
+      }
+
       await html5QrCode.start(
-        { facingMode: 'environment' },
+        cameraConfig,
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
@@ -48,9 +90,12 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
             const scannedDeviceId = decodedText.replace('meal-planner:', '');
             html5QrCode.stop().then(() => {
               onSync(scannedDeviceId);
+            }).catch(() => {
+              // Still call onSync even if stop fails
+              onSync(scannedDeviceId);
             });
           } else {
-            setScanError('Ungültiger QR-Code');
+            setScanError('Ungültiger QR-Code. Bitte scanne einen Meal-Planner QR-Code.');
           }
         },
         () => {
@@ -59,14 +104,28 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
       );
     } catch (err) {
       console.error('Scanner error:', err);
-      setScanError('Kamera konnte nicht gestartet werden. Bitte erlaube den Kamera-Zugriff.');
+      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      if (errorMessage.includes('Permission') || errorMessage.includes('permission')) {
+        setScanError('Kamera-Zugriff verweigert. Bitte erlaube den Zugriff in deinen Browser-Einstellungen.');
+      } else if (errorMessage.includes('NotFound') || errorMessage.includes('not found')) {
+        setScanError('Keine Kamera gefunden. Bitte stelle sicher, dass dein Gerät eine Kamera hat.');
+      } else if (errorMessage.includes('NotAllowed')) {
+        setScanError('Kamera-Zugriff nicht erlaubt. Bitte prüfe deine Browser-Einstellungen.');
+      } else {
+        setScanError('Kamera konnte nicht gestartet werden. Bitte versuche es erneut.');
+      }
       setIsScanning(false);
     }
   };
 
   const stopScanner = async () => {
     if (scannerRef.current) {
-      await scannerRef.current.stop();
+      try {
+        await scannerRef.current.stop();
+      } catch {
+        // Ignore stop errors
+      }
       scannerRef.current = null;
     }
     setIsScanning(false);
@@ -78,9 +137,8 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
 
   const handleScanQR = () => {
     setMode('scan');
-    setTimeout(() => {
-      startScanner();
-    }, 100);
+    // Start scanner after mode change (allows DOM to render first)
+    startScanner();
   };
 
   const handleBack = async () => {
@@ -169,12 +227,18 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
         {mode === 'show' && (
           <div className="space-y-4">
             <div className="flex justify-center rounded-[12px] bg-white p-6">
-              <QRCodeSVG
-                value={`meal-planner:${deviceId}`}
-                size={200}
-                level="M"
-                includeMargin
-              />
+              {deviceId ? (
+                <QRCodeSVG
+                  value={`meal-planner:${deviceId}`}
+                  size={200}
+                  level="M"
+                  includeMargin
+                />
+              ) : (
+                <div className="flex h-[200px] w-[200px] items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--system-blue)] border-t-transparent" />
+                </div>
+              )}
             </div>
             <p className="text-center text-sm text-[var(--foreground-secondary)]">
               Scanne diesen QR-Code mit deinem anderen Gerät, um die Daten zu synchronisieren.
