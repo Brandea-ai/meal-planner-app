@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Smartphone, Camera, ArrowLeft, Info, CheckCircle2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Html5Qrcode } from 'html5-qrcode';
 import { getDeviceId } from '@/lib/supabase';
+
+// Type for html5-qrcode (dynamically imported)
+type Html5QrcodeType = import('html5-qrcode').Html5Qrcode;
 
 interface DeviceSyncProps {
   onSync: (deviceId: string) => void;
@@ -13,11 +15,16 @@ interface DeviceSyncProps {
 
 export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
   const [mode, setMode] = useState<'choose' | 'show' | 'scan' | 'info'>('choose');
-  const [deviceId] = useState(() => getDeviceId());
+  const [deviceId, setDeviceIdState] = useState<string>('');
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<Html5QrcodeType | null>(null);
   const scannerContainerId = 'qr-scanner-container';
+
+  // Get device ID on client side only (avoids hydration mismatch)
+  useEffect(() => {
+    setDeviceIdState(getDeviceId());
+  }, []);
 
   useEffect(() => {
     // Cleanup scanner on unmount
@@ -33,6 +40,17 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
     setIsScanning(true);
 
     try {
+      // Dynamically import html5-qrcode to avoid SSR issues
+      const { Html5Qrcode } = await import('html5-qrcode');
+
+      // Check if container exists
+      const container = document.getElementById(scannerContainerId);
+      if (!container) {
+        setScanError('Scanner-Container nicht gefunden');
+        setIsScanning(false);
+        return;
+      }
+
       const html5QrCode = new Html5Qrcode(scannerContainerId);
       scannerRef.current = html5QrCode;
 
@@ -48,9 +66,12 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
             const scannedDeviceId = decodedText.replace('meal-planner:', '');
             html5QrCode.stop().then(() => {
               onSync(scannedDeviceId);
+            }).catch(() => {
+              // Ignore stop errors
+              onSync(scannedDeviceId);
             });
           } else {
-            setScanError('Ungültiger QR-Code');
+            setScanError('Ungültiger QR-Code. Bitte scanne einen gültigen Meal-Planner QR-Code.');
           }
         },
         () => {
@@ -59,14 +80,27 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
       );
     } catch (err) {
       console.error('Scanner error:', err);
-      setScanError('Kamera konnte nicht gestartet werden. Bitte erlaube den Kamera-Zugriff.');
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+
+      if (errorMessage.includes('Permission') || errorMessage.includes('NotAllowed')) {
+        setScanError('Kamera-Zugriff verweigert. Bitte erlaube den Kamera-Zugriff in deinen Browser-Einstellungen.');
+      } else if (errorMessage.includes('NotFound') || errorMessage.includes('DevicesNotFound')) {
+        setScanError('Keine Kamera gefunden. Bitte stelle sicher, dass dein Gerät eine Kamera hat.');
+      } else {
+        setScanError('Kamera konnte nicht gestartet werden. Bitte versuche es erneut.');
+      }
       setIsScanning(false);
     }
   };
 
   const stopScanner = async () => {
     if (scannerRef.current) {
-      await scannerRef.current.stop();
+      try {
+        await scannerRef.current.stop();
+      } catch (e) {
+        // Ignore stop errors (scanner might already be stopped)
+        console.warn('Scanner stop warning:', e);
+      }
       scannerRef.current = null;
     }
     setIsScanning(false);
@@ -169,16 +203,27 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
         {mode === 'show' && (
           <div className="space-y-4">
             <div className="flex justify-center rounded-[12px] bg-white p-6">
-              <QRCodeSVG
-                value={`meal-planner:${deviceId}`}
-                size={200}
-                level="M"
-                includeMargin
-              />
+              {deviceId ? (
+                <QRCodeSVG
+                  value={`meal-planner:${deviceId}`}
+                  size={200}
+                  level="M"
+                  includeMargin
+                />
+              ) : (
+                <div className="flex h-[200px] w-[200px] items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--fill-secondary)] border-t-[var(--system-blue)]" />
+                </div>
+              )}
             </div>
             <p className="text-center text-sm text-[var(--foreground-secondary)]">
               Scanne diesen QR-Code mit deinem anderen Gerät, um die Daten zu synchronisieren.
             </p>
+            {deviceId && (
+              <p className="text-center font-mono text-xs text-[var(--foreground-tertiary)]">
+                ID: {deviceId.slice(0, 8)}...
+              </p>
+            )}
           </div>
         )}
 
