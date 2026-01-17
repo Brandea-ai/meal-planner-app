@@ -19,7 +19,9 @@ export function MealCard({ meal }: MealCardProps) {
     hideIngredient,
     showIngredient,
     updateIngredientAmount,
+    updateIngredientName,
     resetIngredientAmount,
+    resetIngredientName,
     getIngredientCustomization,
     saveMealNote,
     getMealNote,
@@ -28,6 +30,7 @@ export function MealCard({ meal }: MealCardProps) {
   const isCompleted = progress.completedDays.includes(meal.day);
   const servings = progress.preferences.servings;
   const [editingIngredient, setEditingIngredient] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
 
   // Get hidden ingredients for this meal
@@ -51,22 +54,30 @@ export function MealCard({ meal }: MealCardProps) {
     showIngredient(meal.id, meal.type as MealType, ingredientName);
   };
 
-  const handleStartEditAmount = (ingredientName: string, currentAmount: string) => {
+  const handleStartEdit = (ingredientName: string, currentName: string, currentAmount: string) => {
     setEditingIngredient(ingredientName);
+    setEditName(currentName);
     setEditAmount(currentAmount);
   };
 
-  const handleSaveAmount = (ingredientName: string) => {
+  const handleSaveEdit = (originalIngredientName: string) => {
+    if (editName.trim() && editName.trim() !== originalIngredientName) {
+      updateIngredientName(meal.id, meal.type as MealType, originalIngredientName, editName.trim());
+    }
     if (editAmount.trim()) {
-      updateIngredientAmount(meal.id, meal.type as MealType, ingredientName, editAmount.trim());
+      updateIngredientAmount(meal.id, meal.type as MealType, originalIngredientName, editAmount.trim());
     }
     setEditingIngredient(null);
+    setEditName('');
     setEditAmount('');
   };
 
-  const handleResetAmount = (ingredientName: string) => {
+  const handleResetEdit = (ingredientName: string) => {
     resetIngredientAmount(meal.id, meal.type as MealType, ingredientName);
+    resetIngredientName(meal.id, meal.type as MealType, ingredientName);
     setEditingIngredient(null);
+    setEditName('');
+    setEditAmount('');
   };
 
   const handleSaveNote = (note: string) => {
@@ -80,6 +91,12 @@ export function MealCard({ meal }: MealCardProps) {
       return customization.customAmount;
     }
     return scaleAmount(originalAmount, servings, category);
+  };
+
+  // Get customized or original name for an ingredient
+  const getDisplayName = (ingredientName: string) => {
+    const customization = getIngredientCustomization(meal.id, meal.type as MealType, ingredientName);
+    return customization?.customName || ingredientName;
   };
 
   const currentNote = getMealNote(meal.id, meal.type as MealType);
@@ -153,8 +170,11 @@ export function MealCard({ meal }: MealCardProps) {
             const isHidden = hiddenIngredients.includes(ingredient.name);
             const isEditing = editingIngredient === ingredient.name;
             const displayAmount = getDisplayAmount(ingredient.name, ingredient.amount, ingredient.category);
+            const displayName = getDisplayName(ingredient.name);
             const customization = getIngredientCustomization(meal.id, meal.type as MealType, ingredient.name);
             const hasCustomAmount = !!customization?.customAmount;
+            const hasCustomName = !!customization?.customName;
+            const hasCustomization = hasCustomAmount || hasCustomName;
 
             if (isHidden) {
               return (
@@ -163,7 +183,7 @@ export function MealCard({ meal }: MealCardProps) {
                   className="flex items-center justify-between rounded-[8px] bg-[var(--fill-tertiary)] px-3 py-2 opacity-50"
                 >
                   <span className="text-sm text-[var(--foreground-tertiary)] line-through">
-                    {ingredient.name}
+                    {displayName}
                   </span>
                   <button
                     onClick={() => handleShowIngredient(ingredient.name)}
@@ -183,8 +203,8 @@ export function MealCard({ meal }: MealCardProps) {
                   className="rounded-[8px] bg-[var(--system-blue)]/10 p-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[var(--foreground)]">
-                      {ingredient.name}
+                    <span className="text-xs text-[var(--foreground-tertiary)]">
+                      Original: {ingredient.name}
                     </span>
                     <button
                       onClick={() => setEditingIngredient(null)}
@@ -193,25 +213,34 @@ export function MealCard({ meal }: MealCardProps) {
                       <X size={16} />
                     </button>
                   </div>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 space-y-2">
                     <input
                       type="text"
-                      value={editAmount}
-                      onChange={(e) => setEditAmount(e.target.value)}
-                      placeholder="Neue Menge..."
-                      className="flex-1 rounded-[6px] bg-[var(--background)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Zutat-Name..."
+                      className="w-full rounded-[6px] bg-[var(--background)] px-2 py-1.5 text-sm font-medium text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]"
                       autoFocus
                     />
-                    <button
-                      onClick={() => handleSaveAmount(ingredient.name)}
-                      className="rounded-[6px] bg-[var(--system-blue)] px-3 py-1.5 text-sm font-medium text-white transition-none active:opacity-80"
-                    >
-                      OK
-                    </button>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(e.target.value)}
+                        placeholder="Menge..."
+                        className="flex-1 rounded-[6px] bg-[var(--background)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]"
+                      />
+                      <button
+                        onClick={() => handleSaveEdit(ingredient.name)}
+                        className="rounded-[6px] bg-[var(--system-blue)] px-3 py-1.5 text-sm font-medium text-white transition-none active:opacity-80"
+                      >
+                        OK
+                      </button>
+                    </div>
                   </div>
-                  {hasCustomAmount && (
+                  {hasCustomization && (
                     <button
-                      onClick={() => handleResetAmount(ingredient.name)}
+                      onClick={() => handleResetEdit(ingredient.name)}
                       className="mt-2 flex items-center gap-1 text-xs text-[var(--foreground-tertiary)]"
                     >
                       <RotateCcw size={10} />
@@ -231,16 +260,23 @@ export function MealCard({ meal }: MealCardProps) {
                   <button
                     onClick={() => handleHideIngredient(ingredient.name)}
                     className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--fill-secondary)] text-[var(--foreground-tertiary)] transition-none active:opacity-80"
-                    aria-label={`${ingredient.name} entfernen`}
+                    aria-label={`${displayName} entfernen`}
                   >
                     <X size={12} />
                   </button>
-                  <span className="text-sm text-[var(--foreground)]">
-                    {ingredient.name}
-                  </span>
+                  <button
+                    onClick={() => handleStartEdit(ingredient.name, displayName, displayAmount)}
+                    className={`text-sm transition-none active:opacity-80 ${
+                      hasCustomName
+                        ? 'font-medium text-[var(--system-blue)]'
+                        : 'text-[var(--foreground)]'
+                    }`}
+                  >
+                    {displayName}
+                  </button>
                 </div>
                 <button
-                  onClick={() => handleStartEditAmount(ingredient.name, displayAmount)}
+                  onClick={() => handleStartEdit(ingredient.name, displayName, displayAmount)}
                   className={`flex items-center gap-1 text-sm transition-none active:opacity-80 ${
                     hasCustomAmount
                       ? 'font-medium text-[var(--system-blue)]'

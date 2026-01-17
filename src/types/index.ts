@@ -28,6 +28,7 @@ export interface IngredientCustomization {
   mealType: MealType;
   ingredientName: string;
   customAmount?: string; // User-modified amount
+  customName?: string; // User-modified ingredient name
   isHidden: boolean; // User removed this ingredient
 }
 
@@ -79,6 +80,7 @@ export interface ShoppingItem {
   category: 'fresh' | 'protein' | 'dairy' | 'legumes' | 'grains' | 'basics' | 'extras';
   checked: boolean;
   mealType?: MealType | 'both';
+  forSideDish?: boolean; // True if primarily used for side dishes
 }
 
 // Custom Shopping Items (user-added)

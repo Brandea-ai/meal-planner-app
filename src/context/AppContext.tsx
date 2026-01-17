@@ -31,7 +31,9 @@ interface AppContextType {
   hideIngredient: (mealId: number, mealType: MealType, ingredientName: string) => void;
   showIngredient: (mealId: number, mealType: MealType, ingredientName: string) => void;
   updateIngredientAmount: (mealId: number, mealType: MealType, ingredientName: string, amount: string) => void;
+  updateIngredientName: (mealId: number, mealType: MealType, originalName: string, customName: string) => void;
   resetIngredientAmount: (mealId: number, mealType: MealType, ingredientName: string) => void;
+  resetIngredientName: (mealId: number, mealType: MealType, ingredientName: string) => void;
   getIngredientCustomization: (mealId: number, mealType: MealType, ingredientName: string) => IngredientCustomization | undefined;
   // New: Notes management
   saveMealNote: (mealId: number, mealType: MealType, note: string) => void;
@@ -180,6 +182,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setProgress]);
 
+  const updateIngredientName = useCallback((mealId: number, mealType: MealType, originalName: string, customName: string) => {
+    setProgress((prev) => {
+      const existing = prev.ingredientCustomizations.find(
+        (c) => c.mealId === mealId && c.mealType === mealType && c.ingredientName === originalName
+      );
+
+      if (existing) {
+        return {
+          ...prev,
+          ingredientCustomizations: prev.ingredientCustomizations.map((c) =>
+            c.mealId === mealId && c.mealType === mealType && c.ingredientName === originalName
+              ? { ...c, customName }
+              : c
+          ),
+        };
+      }
+
+      return {
+        ...prev,
+        ingredientCustomizations: [
+          ...prev.ingredientCustomizations,
+          { mealId, mealType, ingredientName: originalName, customName, isHidden: false },
+        ],
+      };
+    });
+  }, [setProgress]);
+
   const resetIngredientAmount = useCallback((mealId: number, mealType: MealType, ingredientName: string) => {
     setProgress((prev) => ({
       ...prev,
@@ -187,7 +216,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName
           ? { ...c, customAmount: undefined }
           : c
-      ).filter((c) => c.customAmount !== undefined || c.isHidden),
+      ).filter((c) => c.customAmount !== undefined || c.customName !== undefined || c.isHidden),
+    }));
+  }, [setProgress]);
+
+  const resetIngredientName = useCallback((mealId: number, mealType: MealType, ingredientName: string) => {
+    setProgress((prev) => ({
+      ...prev,
+      ingredientCustomizations: prev.ingredientCustomizations.map((c) =>
+        c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName
+          ? { ...c, customName: undefined }
+          : c
+      ).filter((c) => c.customAmount !== undefined || c.customName !== undefined || c.isHidden),
     }));
   }, [setProgress]);
 
@@ -289,7 +329,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     hideIngredient,
     showIngredient,
     updateIngredientAmount,
+    updateIngredientName,
     resetIngredientAmount,
+    resetIngredientName,
     getIngredientCustomization,
     saveMealNote,
     getMealNote,
@@ -300,8 +342,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }), [
     progress, isLoaded, syncStatus, deviceId, completeDay, uncompleteDay, setCurrentDay,
     updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage,
-    switchDevice, hideIngredient, showIngredient, updateIngredientAmount, resetIngredientAmount,
-    getIngredientCustomization, saveMealNote, getMealNote, deleteMealNote,
+    switchDevice, hideIngredient, showIngredient, updateIngredientAmount, updateIngredientName,
+    resetIngredientAmount, resetIngredientName, getIngredientCustomization, saveMealNote, getMealNote, deleteMealNote,
     addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem,
   ]);
 

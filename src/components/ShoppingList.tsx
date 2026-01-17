@@ -74,9 +74,15 @@ export function ShoppingList() {
     );
   };
 
-  // Get standard items for a category
+  // Get standard items for a category, split by main/side dish
   const getCategoryItems = (category: string) =>
     shoppingList.filter((item) => item.category === category);
+
+  const getCategoryMainItems = (category: string) =>
+    shoppingList.filter((item) => item.category === category && !item.forSideDish);
+
+  const getCategorySideItems = (category: string) =>
+    shoppingList.filter((item) => item.category === category && item.forSideDish);
 
   // Get custom items for a category
   const getCategoryCustomItems = (category: string) =>
@@ -229,75 +235,123 @@ export function ShoppingList() {
               </button>
 
               {isExpanded && (
-                <ul
+                <div
                   id={`category-${category}`}
                   className="bg-[var(--background)] pb-2"
                 >
-                  {/* Standard items */}
-                  {items.map((item) => {
-                    const isChecked = progress.shoppingListChecked.includes(item.name);
-                    const scaledAmount = scaleAmount(item.amount, servings, item.category);
+                  {/* Main dish items */}
+                  {(() => {
+                    const mainItems = getCategoryMainItems(category);
+                    const sideItems = getCategorySideItems(category);
+                    const hasMainItems = mainItems.length > 0;
+                    const hasSideItems = sideItems.length > 0;
+                    const showLabels = hasMainItems && hasSideItems;
+
+                    const renderItem = (item: typeof shoppingList[0]) => {
+                      const isChecked = progress.shoppingListChecked.includes(item.name);
+                      const scaledAmount = scaleAmount(item.amount, servings, item.category);
+
+                      return (
+                        <li key={item.name}>
+                          <label className="flex min-h-[44px] cursor-pointer items-center gap-3 px-4 py-2 transition-none active:opacity-80">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleShoppingItem(item.name)}
+                              className="flex-shrink-0"
+                            />
+                            <span
+                              className={`flex-1 text-[15px] ${
+                                isChecked
+                                  ? 'text-[var(--foreground-tertiary)] line-through'
+                                  : 'text-[var(--foreground)]'
+                              }`}
+                            >
+                              {item.name}
+                            </span>
+                            <span className="text-sm text-[var(--foreground-tertiary)]">
+                              {scaledAmount}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    };
 
                     return (
-                      <li key={item.name}>
-                        <label className="flex min-h-[44px] cursor-pointer items-center gap-3 px-4 py-2 transition-none active:opacity-80">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleShoppingItem(item.name)}
-                            className="flex-shrink-0"
-                          />
-                          <span
-                            className={`flex-1 text-[15px] ${
-                              isChecked
-                                ? 'text-[var(--foreground-tertiary)] line-through'
-                                : 'text-[var(--foreground)]'
-                            }`}
-                          >
-                            {item.name}
-                          </span>
-                          <span className="text-sm text-[var(--foreground-tertiary)]">
-                            {scaledAmount}
-                          </span>
-                        </label>
-                      </li>
+                      <>
+                        {/* Hauptgericht items */}
+                        {hasMainItems && (
+                          <>
+                            {showLabels && (
+                              <div className="px-4 pt-2 pb-1">
+                                <span className="text-xs font-medium text-[var(--system-blue)]">Hauptgericht</span>
+                              </div>
+                            )}
+                            <ul>
+                              {mainItems.map(renderItem)}
+                            </ul>
+                          </>
+                        )}
+
+                        {/* Beilage items */}
+                        {hasSideItems && (
+                          <>
+                            {showLabels && (
+                              <div className="px-4 pt-3 pb-1">
+                                <span className="text-xs font-medium text-[var(--system-teal)]">Beilage / Dip</span>
+                              </div>
+                            )}
+                            <ul>
+                              {sideItems.map(renderItem)}
+                            </ul>
+                          </>
+                        )}
+                      </>
                     );
-                  })}
+                  })()}
 
                   {/* Custom items */}
-                  {customCategoryItems.map((item) => (
-                    <li key={item.id}>
-                      <div className="flex min-h-[44px] items-center gap-3 px-4 py-2">
-                        <input
-                          type="checkbox"
-                          checked={item.isChecked}
-                          onChange={() => toggleCustomShoppingItem(item.id)}
-                          className="flex-shrink-0"
-                        />
-                        <span
-                          className={`flex-1 text-[15px] ${
-                            item.isChecked
-                              ? 'text-[var(--foreground-tertiary)] line-through'
-                              : 'text-[var(--foreground)]'
-                          }`}
-                        >
-                          {item.name}
-                          <span className="ml-1 text-xs text-[var(--system-blue)]">(eigener)</span>
-                        </span>
-                        <span className="text-sm text-[var(--foreground-tertiary)]">
-                          {item.amount || '-'}
-                        </span>
-                        <button
-                          onClick={() => removeCustomShoppingItem(item.id)}
-                          className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--system-red)] transition-none active:opacity-80"
-                          aria-label={`${item.name} löschen`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                  {customCategoryItems.length > 0 && (
+                    <>
+                      <div className="px-4 pt-3 pb-1">
+                        <span className="text-xs font-medium text-[var(--system-purple)]">Eigene Einträge</span>
                       </div>
-                    </li>
-                  ))}
-                </ul>
+                      <ul>
+                        {customCategoryItems.map((item) => (
+                          <li key={item.id}>
+                            <div className="flex min-h-[44px] items-center gap-3 px-4 py-2">
+                              <input
+                                type="checkbox"
+                                checked={item.isChecked}
+                                onChange={() => toggleCustomShoppingItem(item.id)}
+                                className="flex-shrink-0"
+                              />
+                              <span
+                                className={`flex-1 text-[15px] ${
+                                  item.isChecked
+                                    ? 'text-[var(--foreground-tertiary)] line-through'
+                                    : 'text-[var(--foreground)]'
+                                }`}
+                              >
+                                {item.name}
+                              </span>
+                              <span className="text-sm text-[var(--foreground-tertiary)]">
+                                {item.amount || '-'}
+                              </span>
+                              <button
+                                onClick={() => removeCustomShoppingItem(item.id)}
+                                className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--system-red)] transition-none active:opacity-80"
+                                aria-label={`${item.name} löschen`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           );

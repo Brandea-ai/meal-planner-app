@@ -352,47 +352,51 @@ export const meals: Meal[] = [...breakfastMeals, ...dinnerMeals];
 // ============================================
 
 export const breakfastShoppingList: ShoppingItem[] = [
-  // Frisches
+  // Frisches - Hauptgericht
   { name: "Avocados", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Cherry-Tomaten", amount: "2 Packungen", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Tomaten (groß)", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Gurke", amount: "2 Stück", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Paprika (Speca)", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Spinat", amount: "1 Bund/Packung", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Petersilie", amount: "1 Bund", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Dill", amount: "1 Bund", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Minze", amount: "1 Bund", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Beeren", amount: "200g", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Äpfel", amount: "2 Stück", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Zucchini", amount: "1 Stück", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Aubergine", amount: "1 Stück", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Zwiebel", amount: "1 Stück", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Zitrone", amount: "2 Stück", category: "fresh", checked: false, mealType: "breakfast" },
+  // Frisches - Beilagen
+  { name: "Cherry-Tomaten", amount: "2 Packungen", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
+  { name: "Tomaten (groß)", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
+  { name: "Gurke", amount: "2 Stück", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
+  { name: "Minze", amount: "1 Bund", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
 
-  // Proteine
+  // Proteine - Hauptgericht
   { name: "Eier", amount: "12-16 Stück", category: "protein", checked: false, mealType: "breakfast" },
   { name: "Räucherlachs", amount: "100g", category: "protein", checked: false, mealType: "breakfast" },
-  { name: "Putenschinken", amount: "100g", category: "protein", checked: false, mealType: "breakfast" },
+  // Proteine - Beilagen
+  { name: "Putenschinken", amount: "100g", category: "protein", checked: false, mealType: "breakfast", forSideDish: true },
 
-  // Milchprodukte
+  // Milchprodukte - Hauptgericht
   { name: "Skyr/Magerquark", amount: "500g", category: "dairy", checked: false, mealType: "breakfast" },
-  { name: "Joghurt (natur)", amount: "500g", category: "dairy", checked: false, mealType: "breakfast" },
   { name: "Feta/Sirene", amount: "200g", category: "dairy", checked: false, mealType: "breakfast" },
   { name: "Frischkäse (leicht)", amount: "1 Packung", category: "dairy", checked: false, mealType: "breakfast" },
+  // Milchprodukte - Beilagen
+  { name: "Joghurt (natur)", amount: "500g", category: "dairy", checked: false, mealType: "breakfast", forSideDish: true },
 
-  // Beilagen
+  // Beilagen - alle für Beilagen
   { name: "Vollkorn-Toast", amount: "2 Packungen", category: "grains", checked: false, mealType: "breakfast" },
   { name: "Baguette", amount: "1 Stück", category: "grains", checked: false, mealType: "breakfast" },
   { name: "Wraps/Tortillas", amount: "1 Packung", category: "grains", checked: false, mealType: "breakfast" },
 
-  // Basics
-  { name: "Oliven", amount: "1 Glas", category: "basics", checked: false, mealType: "breakfast" },
+  // Basics - Hauptgericht
   { name: "Olivenöl", amount: "1 Flasche", category: "basics", checked: false, mealType: "both" },
-  { name: "Dijon-Senf", amount: "1 Glas", category: "basics", checked: false, mealType: "breakfast" },
   { name: "Ajvar", amount: "1 Glas", category: "basics", checked: false, mealType: "breakfast" },
   { name: "Tomatensauce", amount: "1 Dose/Glas", category: "basics", checked: false, mealType: "breakfast" },
+  // Basics - Beilagen
+  { name: "Oliven", amount: "1 Glas", category: "basics", checked: false, mealType: "breakfast", forSideDish: true },
+  { name: "Dijon-Senf", amount: "1 Glas", category: "basics", checked: false, mealType: "breakfast", forSideDish: true },
 
-  // Extras
+  // Extras - alle für Hauptgerichte
   { name: "Walnüsse", amount: "100g", category: "extras", checked: false, mealType: "breakfast" },
   { name: "Honig", amount: "1 Glas", category: "extras", checked: false, mealType: "breakfast" },
   { name: "Pfeffer", amount: "1 Mühle", category: "extras", checked: false, mealType: "both" },
@@ -402,47 +406,50 @@ export const breakfastShoppingList: ShoppingItem[] = [
 ];
 
 export const dinnerShoppingList: ShoppingItem[] = [
-  // Fleisch/Fisch
+  // Fleisch/Fisch - Hauptgericht
   { name: "Hähnchenbrust", amount: "1.1-1.3 kg gesamt", category: "protein", checked: false, mealType: "dinner" },
   { name: "Rinderhack", amount: "350-450g", category: "protein", checked: false, mealType: "dinner" },
   { name: "Lachsfilets", amount: "2 Stück (300-400g)", category: "protein", checked: false, mealType: "dinner" },
-
-  // Hülsenfrüchte
-  { name: "Kichererbsen (Dosen)", amount: "3 Dosen", category: "legumes", checked: false, mealType: "dinner" },
-  { name: "Edamame (TK)", amount: "1 Packung (optional)", category: "legumes", checked: false, mealType: "dinner" },
   { name: "Tofu", amount: "300-400g (optional)", category: "protein", checked: false, mealType: "dinner" },
 
-  // Milchprodukte
-  { name: "Joghurt (natur)", amount: "1.5-2 kg", category: "dairy", checked: false, mealType: "dinner" },
-  { name: "Feta", amount: "150-200g", category: "dairy", checked: false, mealType: "dinner" },
-  { name: "Tahini", amount: "1 Glas", category: "basics", checked: false, mealType: "dinner" },
+  // Hülsenfrüchte - Hauptgericht
+  { name: "Kichererbsen (Dosen)", amount: "3 Dosen", category: "legumes", checked: false, mealType: "dinner" },
+  { name: "Edamame (TK)", amount: "1 Packung (optional)", category: "legumes", checked: false, mealType: "dinner" },
 
-  // Gemüse/Salat
-  { name: "Tomaten", amount: "8-10 Stück", category: "fresh", checked: false, mealType: "dinner" },
-  { name: "Gurken", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "dinner" },
+  // Milchprodukte - Beilagen (Dips/Saucen)
+  { name: "Joghurt (natur)", amount: "1.5-2 kg", category: "dairy", checked: false, mealType: "dinner", forSideDish: true },
+  { name: "Feta", amount: "150-200g", category: "dairy", checked: false, mealType: "dinner" },
+
+  // Gemüse/Salat - Hauptgericht
   { name: "Paprika", amount: "6-8 Stück", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Zucchini", amount: "4-5 Stück", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Aubergine", amount: "1 (optional)", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Brokkoli", amount: "1", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Karotten", amount: "6-8 Stück", category: "fresh", checked: false, mealType: "dinner" },
-  { name: "Rotkohl oder Salat", amount: "1", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Zwiebeln", amount: "6-8 Stück", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Knoblauch", amount: "1 Knolle", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Rucola", amount: "1-2 Packungen", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Zitronen", amount: "6-8 Stück", category: "fresh", checked: false, mealType: "dinner" },
   { name: "Ingwer", amount: "1 Stück", category: "fresh", checked: false, mealType: "dinner" },
-  { name: "Kartoffeln", amount: "1 kg", category: "fresh", checked: false, mealType: "dinner" },
-  { name: "Petersilie", amount: "2 Bund", category: "fresh", checked: false, mealType: "dinner" },
-  { name: "Dill/Minze", amount: "1 Bund", category: "fresh", checked: false, mealType: "dinner" },
+  // Gemüse/Salat - Beilagen
+  { name: "Tomaten", amount: "8-10 Stück", category: "fresh", checked: false, mealType: "dinner", forSideDish: true },
+  { name: "Gurken", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "dinner", forSideDish: true },
+  { name: "Rotkohl oder Salat", amount: "1", category: "fresh", checked: false, mealType: "dinner", forSideDish: true },
+  { name: "Kartoffeln", amount: "1 kg", category: "fresh", checked: false, mealType: "dinner", forSideDish: true },
+  { name: "Petersilie", amount: "2 Bund", category: "fresh", checked: false, mealType: "dinner", forSideDish: true },
+  { name: "Dill/Minze", amount: "1 Bund", category: "fresh", checked: false, mealType: "dinner", forSideDish: true },
 
-  // Beilagen (Vollkorn)
-  { name: "Vollkorn-Bulgur", amount: "500g", category: "grains", checked: false, mealType: "dinner" },
-  { name: "Vollkornreis/Naturreis", amount: "500g", category: "grains", checked: false, mealType: "dinner" },
+  // Beilagen (Vollkorn) - alle für Beilagen
+  { name: "Vollkorn-Bulgur", amount: "500g", category: "grains", checked: false, mealType: "dinner", forSideDish: true },
+  { name: "Vollkornreis/Naturreis", amount: "500g", category: "grains", checked: false, mealType: "dinner", forSideDish: true },
   { name: "Vollkornpasta", amount: "500g", category: "grains", checked: false, mealType: "dinner" },
-  { name: "Vollkorn-Fladenbrot", amount: "optional", category: "grains", checked: false, mealType: "dinner" },
+  { name: "Vollkorn-Fladenbrot", amount: "optional", category: "grains", checked: false, mealType: "dinner", forSideDish: true },
 
-  // Saucen/Gewürze
+  // Basics - Beilagen (Dips/Saucen)
+  { name: "Tahini", amount: "1 Glas", category: "basics", checked: false, mealType: "dinner", forSideDish: true },
   { name: "Sojasauce", amount: "1 Flasche", category: "basics", checked: false, mealType: "dinner" },
+
+  // Extras/Gewürze - Hauptgericht
   { name: "Kreuzkümmel", amount: "1 Dose", category: "extras", checked: false, mealType: "dinner" },
   { name: "Paprika edelsüß", amount: "1 Dose", category: "extras", checked: false, mealType: "dinner" },
   { name: "Kurkuma", amount: "1 Dose", category: "extras", checked: false, mealType: "dinner" },
