@@ -12,15 +12,11 @@ interface DeviceSyncProps {
 
 export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
   const [mode, setMode] = useState<'choose' | 'show' | 'scan'>('choose');
-  const [deviceId, setDeviceId] = useState('');
+  const [deviceId] = useState(() => getDeviceId());
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-scanner-container';
-
-  useEffect(() => {
-    setDeviceId(getDeviceId());
-  }, []);
 
   useEffect(() => {
     // Cleanup scanner on unmount

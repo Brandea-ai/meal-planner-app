@@ -12,29 +12,26 @@ import { Navigation } from './Navigation';
 export function MealPlanApp() {
   const { progress, isLoaded, startPlan } = useApp();
   const [activeTab, setActiveTab] = useState<'plan' | 'shopping' | 'settings'>('plan');
-  const [selectedDay, setSelectedDay] = useState(1);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const hasInitialized = useRef(false);
   const hasStarted = useRef(false);
 
   // Minimum swipe distance
   const minSwipeDistance = 50;
 
-  // Initialize selected day and start plan after load
+  // Derive the display day - use selectedDay if set, otherwise use progress.currentDay
+  const displayDay = selectedDay ?? progress.currentDay ?? 1;
+
+  // Start plan on first load (only once)
   useEffect(() => {
     if (!isLoaded) return;
-
-    if (!hasInitialized.current && progress.currentDay) {
-      hasInitialized.current = true;
-      setSelectedDay(progress.currentDay);
-    }
 
     if (!hasStarted.current && !progress.startDate) {
       hasStarted.current = true;
       startPlan();
     }
-  }, [isLoaded, progress.currentDay, progress.startDate, startPlan]);
+  }, [isLoaded, progress.startDate, startPlan]);
 
   const handleSwipe = useCallback((startX: number, endX: number) => {
     const distance = startX - endX;
@@ -43,13 +40,13 @@ export function MealPlanApp() {
 
     if (activeTab === 'plan') {
       if (isLeftSwipe) {
-        setSelectedDay((prev) => Math.min(prev + 1, 7));
+        setSelectedDay((prev) => Math.min((prev ?? displayDay) + 1, 7));
       }
       if (isRightSwipe) {
-        setSelectedDay((prev) => Math.max(prev - 1, 1));
+        setSelectedDay((prev) => Math.max((prev ?? displayDay) - 1, 1));
       }
     }
-  }, [activeTab]);
+  }, [activeTab, displayDay]);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
@@ -67,21 +64,21 @@ export function MealPlanApp() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab === 'plan') {
         if (e.key === 'ArrowRight') {
-          setSelectedDay((prev) => Math.min(prev + 1, 7));
+          setSelectedDay((prev) => Math.min((prev ?? displayDay) + 1, 7));
         }
         if (e.key === 'ArrowLeft') {
-          setSelectedDay((prev) => Math.max(prev - 1, 1));
+          setSelectedDay((prev) => Math.max((prev ?? displayDay) - 1, 1));
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab]);
+  }, [activeTab, displayDay]);
 
   const selectedMeal = useMemo(() =>
-    meals.find((m) => m.day === selectedDay),
-    [selectedDay]
+    meals.find((m) => m.day === displayDay),
+    [displayDay]
   );
 
   if (!isLoaded) {
@@ -115,7 +112,7 @@ export function MealPlanApp() {
       >
         {activeTab === 'plan' && (
           <div className="space-y-4">
-            <DaySelector selectedDay={selectedDay} onDaySelect={setSelectedDay} />
+            <DaySelector selectedDay={displayDay} onDaySelect={setSelectedDay} />
 
             {/* Swipe hint */}
             <p className="text-center text-xs text-gray-400 dark:text-gray-500">
