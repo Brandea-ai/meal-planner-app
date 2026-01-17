@@ -11,6 +11,7 @@ import { ShoppingList } from './ShoppingList';
 import { Settings } from './Settings';
 import { Navigation } from './Navigation';
 import { Statistics } from './statistics/Statistics';
+import { Chat } from './Chat';
 
 /**
  * Prep Time Thresholds (evidenzbasiert)
@@ -29,8 +30,8 @@ const PREP_TIME_LIMITS = {
 };
 
 export function MealPlanApp() {
-  const { progress, isLoaded, startPlan, updatePreferences } = useApp();
-  const [activeTab, setActiveTab] = useState<'plan' | 'shopping' | 'statistics' | 'settings'>('plan');
+  const { progress, isLoaded, startPlan } = useApp();
+  const [activeTab, setActiveTab] = useState<'plan' | 'shopping' | 'chat' | 'statistics' | 'settings'>('plan');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [mealType, setMealType] = useState<MealType>('breakfast');
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -55,13 +56,6 @@ export function MealPlanApp() {
       startPlan();
     }
   }, [isLoaded, progress.startDate, startPlan]);
-
-  // Auto-sync shopping list filter when meal type changes
-  useEffect(() => {
-    if (progress.preferences.autoSyncShoppingFilter && activeTab === 'plan') {
-      updatePreferences({ shoppingListFilter: mealType });
-    }
-  }, [mealType, progress.preferences.autoSyncShoppingFilter, activeTab, updatePreferences]);
 
   const handleSwipe = useCallback((startX: number, endX: number) => {
     const distance = startX - endX;
@@ -220,6 +214,8 @@ export function MealPlanApp() {
         )}
 
         {activeTab === 'shopping' && <ShoppingList />}
+
+        {activeTab === 'chat' && <Chat />}
 
         {activeTab === 'statistics' && <Statistics />}
 

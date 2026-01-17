@@ -155,3 +155,44 @@ export interface MealStatistics {
     legumeMeals: number;
   };
 }
+
+// Chat Message Types
+export type ChatMessageType = 'text' | 'feedback' | 'suggestion';
+
+export interface ChatMessage {
+  id: string;
+  deviceId: string;
+  senderName: string;
+  message: string;
+  messageType: ChatMessageType;
+  mealReference?: number; // Day 1-7
+  mealType?: MealType;
+  rating?: number; // 1-5 stars
+  createdAt: string;
+  updatedAt: string;
+}
+
+// For creating new messages (without id, timestamps)
+export interface NewChatMessage {
+  senderName: string;
+  message: string;
+  messageType?: ChatMessageType;
+  mealReference?: number;
+  mealType?: MealType;
+  rating?: number;
+}
+
+// Export format for AI processing
+export interface ChatExport {
+  exportedAt: string;
+  deviceId: string;
+  weekStart: string;
+  weekEnd: string;
+  messages: ChatMessage[];
+  summary: {
+    totalMessages: number;
+    feedbackCount: number;
+    averageRating: number | null;
+    topDiscussedMeals: Array<{ day: number; mealType: MealType; count: number }>;
+  };
+}

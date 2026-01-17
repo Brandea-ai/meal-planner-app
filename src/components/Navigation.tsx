@@ -1,18 +1,19 @@
 'use client';
 
-import { Calendar, ShoppingCart, Settings, BarChart3 } from 'lucide-react';
+import { Calendar, ShoppingCart, Settings, BarChart3, MessageCircle } from 'lucide-react';
 
 interface NavigationProps {
-  activeTab: 'plan' | 'shopping' | 'statistics' | 'settings';
-  onTabChange: (tab: 'plan' | 'shopping' | 'statistics' | 'settings') => void;
+  activeTab: 'plan' | 'shopping' | 'chat' | 'statistics' | 'settings';
+  onTabChange: (tab: 'plan' | 'shopping' | 'chat' | 'statistics' | 'settings') => void;
 }
 
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const tabs = [
-    { id: 'plan' as const, label: 'Wochenplan', icon: Calendar },
-    { id: 'shopping' as const, label: 'Einkaufen', icon: ShoppingCart },
+    { id: 'plan' as const, label: 'Plan', icon: Calendar },
+    { id: 'shopping' as const, label: 'Einkauf', icon: ShoppingCart },
+    { id: 'chat' as const, label: 'Chat', icon: MessageCircle },
     { id: 'statistics' as const, label: 'Statistik', icon: BarChart3 },
-    { id: 'settings' as const, label: 'Einstellungen', icon: Settings },
+    { id: 'settings' as const, label: 'Mehr', icon: Settings },
   ];
 
   return (

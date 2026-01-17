@@ -17,8 +17,11 @@ import {
   Beef,
   Scale,
   CheckCircle2,
+  Download,
+  MessageCircle,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import { useChat } from '@/hooks/useChat';
 import { ProgressRing } from './ProgressRing';
 import { DeviceSync } from './DeviceSync';
 import { InfoPopup } from './InfoPopup';
@@ -37,6 +40,7 @@ const principles = [
 
 export function Settings() {
   const { progress, syncStatus, deviceId, updatePreferences, resetProgress, switchDevice } = useApp();
+  const { messages, exportChat } = useChat();
   const [showDeviceSync, setShowDeviceSync] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
 
@@ -59,6 +63,20 @@ export function Settings() {
     setShowDeviceSync(false);
     setSyncSuccess(true);
     setTimeout(() => setSyncSuccess(false), 3000);
+  };
+
+  const handleExportChat = () => {
+    const exportData = exportChat();
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `meal-planner-chat-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -227,6 +245,38 @@ export function Settings() {
           </select>
         </div>
 
+      </section>
+
+      {/* Chat Export Section */}
+      <section className="overflow-hidden rounded-[12px] bg-[var(--system-purple)]/10">
+        <button
+          onClick={handleExportChat}
+          disabled={messages.length === 0}
+          className="flex min-h-[44px] w-full items-center justify-between p-4 transition-none active:opacity-80 disabled:opacity-50"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-purple)]">
+              <Download size={20} className="text-white" />
+            </div>
+            <div className="text-left">
+              <span className="block font-semibold text-[var(--foreground)]">
+                Chat exportieren
+              </span>
+              <span className="text-sm text-[var(--foreground-secondary)]">
+                {messages.length} Nachrichten als JSON
+              </span>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-[var(--gray-2)]" />
+        </button>
+        <div className="border-t border-[var(--separator)] px-4 py-3">
+          <div className="flex items-start gap-2">
+            <MessageCircle size={16} className="mt-0.5 flex-shrink-0 text-[var(--system-purple)]" />
+            <p className="text-xs text-[var(--foreground-secondary)]">
+              Exportiere deine Chat-Chronik als JSON-Datei zur KI-Analyse. Perfekt um die nächste Woche zu planen!
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* Principles Section */}
