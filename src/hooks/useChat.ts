@@ -11,6 +11,7 @@ import {
   storePassword,
   hasPasswordSetup,
   verifyStoredPassword,
+  clearPassword,
 } from '@/lib/crypto';
 
 interface UseChatReturn {
@@ -29,6 +30,7 @@ interface UseChatReturn {
   isPasswordSetup: boolean;
   setPassword: (password: string) => Promise<void>;
   verifyPassword: (password: string) => Promise<boolean>;
+  logout: () => void;
 }
 
 export function useChat(): UseChatReturn {
@@ -503,6 +505,15 @@ export function useChat(): UseChatReturn {
     };
   }, [messages]);
 
+  // Logout - clear password and show password screen again
+  const logout = useCallback(() => {
+    clearPassword();
+    passwordRef.current = null;
+    setPasswordState(null);
+    setNeedsPassword(true);
+    setMessages([]);
+  }, []);
+
   return {
     messages,
     isLoading,
@@ -519,5 +530,6 @@ export function useChat(): UseChatReturn {
     isPasswordSetup,
     setPassword,
     verifyPassword: verifyPasswordFn,
+    logout,
   };
 }

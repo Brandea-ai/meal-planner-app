@@ -16,6 +16,7 @@ import {
   Phone,
   Video,
   Shield,
+  LogOut,
 } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { useCall } from '@/hooks/useCall';
@@ -45,6 +46,7 @@ export function Chat({ onBack }: ChatProps) {
     isPasswordSetup,
     setPassword,
     verifyPassword,
+    logout,
   } = useChat();
 
   const {
@@ -302,6 +304,17 @@ export function Chat({ onBack }: ChatProps) {
               <User size={14} />
               {senderName}
             </button>
+            {/* Logout Button */}
+            {isEncrypted && (
+              <button
+                onClick={logout}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-red)]/15 text-[var(--system-red)] transition-none active:opacity-80"
+                aria-label="Abmelden"
+                title="Passwort zurücksetzen"
+              >
+                <LogOut size={16} />
+              </button>
+            )}
           </div>
         </div>
       </header>
