@@ -11,7 +11,7 @@ import {
   storePassword,
   hasPasswordSetup,
   verifyStoredPassword,
-  clearPassword,
+  resetEncryption,
 } from '@/lib/crypto';
 
 interface UseChatReturn {
@@ -505,13 +505,21 @@ export function useChat(): UseChatReturn {
     };
   }, [messages]);
 
-  // Logout - clear password and show password screen again
+  // Logout - completely reset encryption and show password screen again
   const logout = useCallback(() => {
-    clearPassword();
+    // Clear all stored passwords (both session and local storage)
+    resetEncryption();
+    // Reset all state
     passwordRef.current = null;
     setPasswordState(null);
     setNeedsPassword(true);
+    setIsPasswordSetup(false);
     setMessages([]);
+    setShouldLoadMessages(false);
+    // Force reload to get fresh state
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
   }, []);
 
   return {

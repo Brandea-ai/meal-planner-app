@@ -304,17 +304,15 @@ export function Chat({ onBack }: ChatProps) {
               <User size={14} />
               {senderName}
             </button>
-            {/* Logout Button */}
-            {isEncrypted && (
-              <button
-                onClick={logout}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-red)]/15 text-[var(--system-red)] transition-none active:opacity-80"
-                aria-label="Abmelden"
-                title="Passwort zurücksetzen"
-              >
-                <LogOut size={16} />
-              </button>
-            )}
+            {/* Reset/Logout Button - always visible */}
+            <button
+              onClick={logout}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-red)]/15 text-[var(--system-red)] transition-none active:opacity-80"
+              aria-label="Zurücksetzen"
+              title="Verschlüsselung zurücksetzen"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </header>
