@@ -23,7 +23,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
       role="navigation"
       aria-label="Hauptnavigation"
     >
-      <div className="border-t border-[var(--separator)] bg-[var(--background)]/90 backdrop-blur-xl">
+      <div className="border-t border-[var(--separator)] bg-[var(--background)]/95 backdrop-blur-xl">
         <div className="mx-auto max-w-lg">
           {/* Tab Buttons */}
           <div className="flex">
@@ -39,39 +39,45 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
                   className="relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  {isChat ? (
+                  {/* Active Background Highlight */}
+                  {isActive && !isChat && (
                     <motion.div
-                      className={`flex h-7 w-7 items-center justify-center rounded-full ${
+                      layoutId="nav-highlight"
+                      className="absolute inset-x-2 top-1.5 bottom-[calc(0.375rem+env(safe-area-inset-bottom))] rounded-xl bg-[var(--system-blue)]/10"
+                      transition={{ type: 'spring' as const, stiffness: 400, damping: 30 }}
+                    />
+                  )}
+
+                  {isChat ? (
+                    <div
+                      className={`relative flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
                         isActive
                           ? 'bg-[var(--system-green)] text-white'
-                          : 'bg-[var(--system-green)]/20 text-[var(--system-green)]'
+                          : 'bg-[var(--system-green)]/15 text-[var(--system-green)]'
                       }`}
-                      animate={{ scale: isActive ? 1.05 : 1 }}
-                      transition={{ type: 'spring' as const, stiffness: 400, damping: 25 }}
                     >
                       <Icon size={16} strokeWidth={2.5} aria-hidden="true" />
-                    </motion.div>
+                    </div>
                   ) : (
-                    <motion.div
-                      animate={{ scale: isActive ? 1.1 : 1 }}
-                      transition={{ type: 'spring' as const, stiffness: 400, damping: 25 }}
-                    >
+                    <div className="relative">
                       <Icon
-                        size={20}
-                        strokeWidth={isActive ? 2.5 : 2}
+                        size={22}
+                        strokeWidth={isActive ? 2.5 : 1.8}
                         aria-hidden="true"
-                        className={
+                        className={`transition-colors ${
                           isActive
                             ? 'text-[var(--system-blue)]'
                             : 'text-[var(--gray-1)]'
-                        }
+                        }`}
                       />
-                    </motion.div>
+                    </div>
                   )}
                   <span
-                    className={`text-[10px] font-medium ${
+                    className={`relative text-[10px] font-semibold transition-colors ${
                       isChat
-                        ? 'text-[var(--system-green)]'
+                        ? isActive
+                          ? 'text-[var(--system-green)]'
+                          : 'text-[var(--system-green)]/70'
                         : isActive
                         ? 'text-[var(--system-blue)]'
                         : 'text-[var(--gray-1)]'
