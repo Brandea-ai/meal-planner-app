@@ -4,16 +4,31 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, getDeviceId } from '@/lib/supabase';
 import { ChatMessage, NewChatMessage, ChatExport, MealType } from '@/types';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import {
+  encryptMessage,
+  decryptMessage,
+  getStoredPassword,
+  storePassword,
+  hasPasswordSetup,
+  verifyStoredPassword,
+} from '@/lib/crypto';
 
 interface UseChatReturn {
   messages: ChatMessage[];
   isLoading: boolean;
   error: string | null;
   sendMessage: (message: NewChatMessage) => Promise<void>;
+  updateMessage: (messageId: string, newText: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   exportChat: () => ChatExport;
   senderName: string;
   setSenderName: (name: string) => void;
+  // Encryption
+  isEncrypted: boolean;
+  needsPassword: boolean;
+  isPasswordSetup: boolean;
+  setPassword: (password: string) => Promise<void>;
+  verifyPassword: (password: string) => Promise<boolean>;
 }
 
 export function useChat(): UseChatReturn {
@@ -21,8 +36,30 @@ export function useChat(): UseChatReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [senderName, setSenderNameState] = useState<string>('');
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [isPasswordSetup, setIsPasswordSetup] = useState(false);
+  const [password, setPasswordState] = useState<string | null>(null);
+
   const channelRef = useRef<RealtimeChannel | null>(null);
   const deviceIdRef = useRef<string>('');
+  const passwordRef = useRef<string | null>(null);
+
+  // Check encryption status on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasSetup = hasPasswordSetup();
+      setIsPasswordSetup(hasSetup);
+
+      const storedPassword = getStoredPassword();
+      if (storedPassword) {
+        passwordRef.current = storedPassword;
+        setPasswordState(storedPassword);
+        setNeedsPassword(false);
+      } else if (hasSetup) {
+        setNeedsPassword(true);
+      }
+    }
+  }, []);
 
   // Load sender name from localStorage
   useEffect(() => {
@@ -39,6 +76,31 @@ export function useChat(): UseChatReturn {
       localStorage.setItem('meal-planner-sender-name', name);
     }
   }, []);
+
+  // Decrypt a message
+  const decryptMessageContent = useCallback(async (encryptedMessage: string): Promise<string> => {
+    const pwd = passwordRef.current;
+    if (!pwd) return encryptedMessage;
+
+    try {
+      return await decryptMessage(encryptedMessage, pwd);
+    } catch {
+      return '[Verschlüsselt]';
+    }
+  }, []);
+
+  // Decrypt all messages
+  const decryptMessages = useCallback(async (encryptedMessages: ChatMessage[]): Promise<ChatMessage[]> => {
+    const pwd = passwordRef.current;
+    if (!pwd) return encryptedMessages;
+
+    return Promise.all(
+      encryptedMessages.map(async (msg) => ({
+        ...msg,
+        message: await decryptMessageContent(msg.message),
+      }))
+    );
+  }, [decryptMessageContent]);
 
   // Load messages from Supabase
   const loadMessages = useCallback(async (deviceId: string) => {
@@ -67,10 +129,19 @@ export function useChat(): UseChatReturn {
           mealReference: msg.meal_reference,
           mealType: msg.meal_type,
           rating: msg.rating,
+          replyTo: msg.reply_to,
+          isEdited: msg.is_edited || false,
           createdAt: msg.created_at,
           updatedAt: msg.updated_at,
         }));
-        setMessages(formattedMessages);
+
+        // Decrypt messages if password is available
+        if (passwordRef.current) {
+          const decrypted = await decryptMessages(formattedMessages);
+          setMessages(decrypted);
+        } else {
+          setMessages(formattedMessages);
+        }
       }
     } catch (e) {
       console.warn('Failed to load chat:', e);
@@ -78,7 +149,7 @@ export function useChat(): UseChatReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [decryptMessages]);
 
   // Setup realtime subscription
   const setupRealtimeSubscription = useCallback((deviceId: string) => {
@@ -99,29 +170,72 @@ export function useChat(): UseChatReturn {
           table: 'chat_messages',
           filter: `device_id=eq.${deviceId}`,
         },
-        (payload) => {
+        async (payload) => {
           if (payload.eventType === 'INSERT') {
             const newMsg = payload.new as Record<string, unknown>;
+            let messageText = newMsg.message as string;
+
+            // Decrypt if password available
+            if (passwordRef.current) {
+              try {
+                messageText = await decryptMessage(messageText, passwordRef.current);
+              } catch {
+                messageText = '[Verschlüsselt]';
+              }
+            }
+
             const formattedMsg: ChatMessage = {
               id: newMsg.id as string,
               deviceId: newMsg.device_id as string,
               senderName: newMsg.sender_name as string,
-              message: newMsg.message as string,
+              message: messageText,
               messageType: (newMsg.message_type as ChatMessage['messageType']) || 'text',
               mealReference: newMsg.meal_reference as number | undefined,
               mealType: newMsg.meal_type as MealType | undefined,
               rating: newMsg.rating as number | undefined,
+              replyTo: newMsg.reply_to as string | undefined,
+              isEdited: (newMsg.is_edited as boolean) || false,
               createdAt: newMsg.created_at as string,
               updatedAt: newMsg.updated_at as string,
             };
 
             setMessages((prev) => {
-              // Avoid duplicates
               if (prev.some((m) => m.id === formattedMsg.id)) {
                 return prev;
               }
               return [...prev, formattedMsg];
             });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedMsg = payload.new as Record<string, unknown>;
+            let messageText = updatedMsg.message as string;
+
+            // Decrypt if password available
+            if (passwordRef.current) {
+              try {
+                messageText = await decryptMessage(messageText, passwordRef.current);
+              } catch {
+                messageText = '[Verschlüsselt]';
+              }
+            }
+
+            const formattedMsg: ChatMessage = {
+              id: updatedMsg.id as string,
+              deviceId: updatedMsg.device_id as string,
+              senderName: updatedMsg.sender_name as string,
+              message: messageText,
+              messageType: (updatedMsg.message_type as ChatMessage['messageType']) || 'text',
+              mealReference: updatedMsg.meal_reference as number | undefined,
+              mealType: updatedMsg.meal_type as MealType | undefined,
+              rating: updatedMsg.rating as number | undefined,
+              replyTo: updatedMsg.reply_to as string | undefined,
+              isEdited: (updatedMsg.is_edited as boolean) || false,
+              createdAt: updatedMsg.created_at as string,
+              updatedAt: updatedMsg.updated_at as string,
+            };
+
+            setMessages((prev) =>
+              prev.map((m) => (m.id === formattedMsg.id ? formattedMsg : m))
+            );
           } else if (payload.eventType === 'DELETE') {
             const deletedId = (payload.old as { id: string }).id;
             setMessages((prev) => prev.filter((m) => m.id !== deletedId));
@@ -130,7 +244,7 @@ export function useChat(): UseChatReturn {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('Chat realtime subscription active');
+          console.log('Chat realtime subscription active (encrypted)');
         }
       });
 
@@ -141,8 +255,12 @@ export function useChat(): UseChatReturn {
   useEffect(() => {
     const deviceId = getDeviceId();
     deviceIdRef.current = deviceId;
-    loadMessages(deviceId);
-    setupRealtimeSubscription(deviceId);
+
+    // Only load messages if we have password or encryption isn't set up yet
+    if (passwordRef.current || !hasPasswordSetup()) {
+      loadMessages(deviceId);
+      setupRealtimeSubscription(deviceId);
+    }
 
     return () => {
       if (channelRef.current) {
@@ -152,22 +270,51 @@ export function useChat(): UseChatReturn {
     };
   }, [loadMessages, setupRealtimeSubscription]);
 
-  // Send a new message
+  // Set password (for both new setup and login)
+  const setPassword = useCallback(async (pwd: string) => {
+    passwordRef.current = pwd;
+    setPasswordState(pwd);
+    storePassword(pwd);
+    setNeedsPassword(false);
+    setIsPasswordSetup(true);
+
+    // Reload and decrypt messages
+    const deviceId = deviceIdRef.current;
+    if (deviceId) {
+      await loadMessages(deviceId);
+      setupRealtimeSubscription(deviceId);
+    }
+  }, [loadMessages, setupRealtimeSubscription]);
+
+  // Verify password
+  const verifyPasswordFn = useCallback(async (pwd: string): Promise<boolean> => {
+    return verifyStoredPassword(pwd);
+  }, []);
+
+  // Send a new message (encrypted)
   const sendMessage = useCallback(async (newMessage: NewChatMessage) => {
     const deviceId = deviceIdRef.current;
+    const pwd = passwordRef.current;
     if (!deviceId || !newMessage.message.trim()) return;
 
     try {
+      // Encrypt the message if password is set
+      let messageToSend = newMessage.message.trim();
+      if (pwd) {
+        messageToSend = await encryptMessage(messageToSend, pwd);
+      }
+
       const { error: insertError } = await supabase
         .from('chat_messages')
         .insert({
           device_id: deviceId,
           sender_name: newMessage.senderName || 'Anonym',
-          message: newMessage.message.trim(),
+          message: messageToSend,
           message_type: newMessage.messageType || 'text',
           meal_reference: newMessage.mealReference,
           meal_type: newMessage.mealType,
           rating: newMessage.rating,
+          reply_to: newMessage.replyTo,
         });
 
       if (insertError) {
@@ -177,6 +324,37 @@ export function useChat(): UseChatReturn {
     } catch (e) {
       console.warn('Failed to send message:', e);
       setError('Nachricht konnte nicht gesendet werden');
+    }
+  }, []);
+
+  // Update an existing message (encrypted)
+  const updateMessage = useCallback(async (messageId: string, newText: string) => {
+    const pwd = passwordRef.current;
+    if (!newText.trim()) return;
+
+    try {
+      // Encrypt the message if password is set
+      let messageToSend = newText.trim();
+      if (pwd) {
+        messageToSend = await encryptMessage(messageToSend, pwd);
+      }
+
+      const { error: updateError } = await supabase
+        .from('chat_messages')
+        .update({
+          message: messageToSend,
+          is_edited: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', messageId);
+
+      if (updateError) {
+        console.warn('Error updating message:', updateError);
+        setError('Nachricht konnte nicht bearbeitet werden');
+      }
+    } catch (e) {
+      console.warn('Failed to update message:', e);
+      setError('Nachricht konnte nicht bearbeitet werden');
     }
   }, []);
 
@@ -198,12 +376,11 @@ export function useChat(): UseChatReturn {
     }
   }, []);
 
-  // Export chat as JSON for AI processing
+  // Export chat as JSON for AI processing (decrypted)
   const exportChat = useCallback((): ChatExport => {
     const deviceId = deviceIdRef.current;
     const now = new Date();
 
-    // Calculate week boundaries
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
@@ -212,14 +389,12 @@ export function useChat(): UseChatReturn {
     weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);
 
-    // Calculate summary statistics
     const feedbackMessages = messages.filter((m) => m.messageType === 'feedback');
     const ratingsWithValues = feedbackMessages.filter((m) => m.rating != null);
     const averageRating = ratingsWithValues.length > 0
       ? ratingsWithValues.reduce((sum, m) => sum + (m.rating || 0), 0) / ratingsWithValues.length
       : null;
 
-    // Count meal references
     const mealCounts: Record<string, number> = {};
     messages.forEach((m) => {
       if (m.mealReference && m.mealType) {
@@ -241,7 +416,7 @@ export function useChat(): UseChatReturn {
       deviceId,
       weekStart: weekStart.toISOString(),
       weekEnd: weekEnd.toISOString(),
-      messages,
+      messages, // Already decrypted in state
       summary: {
         totalMessages: messages.length,
         feedbackCount: feedbackMessages.length,
@@ -256,9 +431,16 @@ export function useChat(): UseChatReturn {
     isLoading,
     error,
     sendMessage,
+    updateMessage,
     deleteMessage,
     exportChat,
     senderName,
     setSenderName,
+    // Encryption
+    isEncrypted: !!password,
+    needsPassword,
+    isPasswordSetup,
+    setPassword,
+    verifyPassword: verifyPasswordFn,
   };
 }

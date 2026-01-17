@@ -168,6 +168,8 @@ export interface ChatMessage {
   mealReference?: number; // Day 1-7
   mealType?: MealType;
   rating?: number; // 1-5 stars
+  replyTo?: string; // ID of message being replied to
+  isEdited?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -180,6 +182,34 @@ export interface NewChatMessage {
   mealReference?: number;
   mealType?: MealType;
   rating?: number;
+  replyTo?: string;
+}
+
+// Call Types for WebRTC
+export type CallType = 'video' | 'audio';
+export type CallSignalType = 'offer' | 'answer' | 'ice-candidate' | 'call-request' | 'call-accept' | 'call-reject' | 'call-end';
+export type CallState = 'idle' | 'calling' | 'incoming' | 'connecting' | 'connected' | 'ended';
+
+export interface CallSignal {
+  id: string;
+  deviceId: string;
+  targetDeviceId: string;
+  callerName: string;
+  signalType: CallSignalType;
+  callType: CallType;
+  signalData?: RTCSessionDescriptionInit | RTCIceCandidateInit | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface CallSession {
+  callId: string;
+  remoteDeviceId: string;
+  remoteName: string;
+  callType: CallType;
+  state: CallState;
+  startedAt: string;
+  isInitiator: boolean;
 }
 
 // Export format for AI processing

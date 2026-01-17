@@ -128,102 +128,111 @@ export function MealPlanApp() {
     );
   }
 
+  // Chat is fullscreen - no header, no navigation
+  const isChatFullscreen = activeTab === 'chat';
+
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-[var(--separator)] bg-[var(--background)]/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-lg px-4 py-3">
-          <h1 className="text-center text-lg font-semibold text-[var(--foreground)]">
-            7-Tage Mahlzeitenplan
-          </h1>
-          <p className="text-center text-xs text-[var(--foreground-tertiary)]">
-            Albanisch · Deutsch · Französisch
-          </p>
+    <div className={`min-h-screen bg-[var(--background)] ${isChatFullscreen ? '' : 'pb-24'}`}>
+      {/* Header - hidden in chat mode */}
+      {!isChatFullscreen && (
+        <header className="sticky top-0 z-40 border-b border-[var(--separator)] bg-[var(--background)]/80 backdrop-blur-xl">
+          <div className="mx-auto max-w-lg px-4 py-3">
+            <h1 className="text-center text-lg font-semibold text-[var(--foreground)]">
+              7-Tage Mahlzeitenplan
+            </h1>
+            <p className="text-center text-xs text-[var(--foreground-tertiary)]">
+              Albanisch · Deutsch · Französisch
+            </p>
 
-          {/* Meal Type Toggle - Segmented Control */}
-          {activeTab === 'plan' && (
-            <div className="mt-3">
-              <div className="flex rounded-[10px] bg-[var(--fill-tertiary)] p-0.5">
-                <button
-                  onClick={() => setMealType('breakfast')}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-4 py-2 text-sm font-medium transition-none active:opacity-80 ${
-                    mealType === 'breakfast'
-                      ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                      : 'text-[var(--foreground-secondary)]'
-                  }`}
-                >
-                  <Sun size={16} />
-                  {mealTypeLabels.breakfast}
-                </button>
-                <button
-                  onClick={() => setMealType('dinner')}
-                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-4 py-2 text-sm font-medium transition-none active:opacity-80 ${
-                    mealType === 'dinner'
-                      ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                      : 'text-[var(--foreground-secondary)]'
-                  }`}
-                >
-                  <Moon size={16} />
-                  {mealTypeLabels.dinner}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main
-        ref={contentRef}
-        className="mx-auto max-w-lg px-4 py-4"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        {activeTab === 'plan' && (
-          <div className="space-y-4">
-            <DaySelector selectedDay={displayDay} onDaySelect={setSelectedDay} />
-
-            {/* Time Warning - shown when meal exceeds user's preference */}
-            {mealExceedsTimeLimit && selectedMeal && (
-              <div className="flex items-start gap-3 rounded-[12px] bg-[var(--system-orange)]/10 p-3">
-                <AlertCircle size={18} className="mt-0.5 flex-shrink-0 text-[var(--system-orange)]" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[var(--foreground)]">
-                    Dieses Gericht dauert {selectedMeal.prepTime} Min
-                  </p>
-                  <p className="mt-0.5 text-xs text-[var(--foreground-secondary)]">
-                    Deine Einstellung: {timePreference === 'quick' ? 'Schnell (≤12 Min)' : 'Normal (≤25 Min)'}
-                  </p>
-                  {fastestAlternative && (
-                    <button
-                      onClick={() => setSelectedDay(fastestAlternative.day)}
-                      className="mt-2 flex items-center gap-1.5 text-sm font-medium text-[var(--system-blue)] transition-none active:opacity-80"
-                    >
-                      <Clock size={14} />
-                      Schnellere Alternative: Tag {fastestAlternative.day} ({fastestAlternative.prepTime} Min)
-                    </button>
-                  )}
+            {/* Meal Type Toggle - Segmented Control */}
+            {activeTab === 'plan' && (
+              <div className="mt-3">
+                <div className="flex rounded-[10px] bg-[var(--fill-tertiary)] p-0.5">
+                  <button
+                    onClick={() => setMealType('breakfast')}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-4 py-2 text-sm font-medium transition-none active:opacity-80 ${
+                      mealType === 'breakfast'
+                        ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
+                        : 'text-[var(--foreground-secondary)]'
+                    }`}
+                  >
+                    <Sun size={16} />
+                    {mealTypeLabels.breakfast}
+                  </button>
+                  <button
+                    onClick={() => setMealType('dinner')}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-4 py-2 text-sm font-medium transition-none active:opacity-80 ${
+                      mealType === 'dinner'
+                        ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
+                        : 'text-[var(--foreground-secondary)]'
+                    }`}
+                  >
+                    <Moon size={16} />
+                    {mealTypeLabels.dinner}
+                  </button>
                 </div>
               </div>
             )}
-
-            {selectedMeal && (
-              <MealCard meal={selectedMeal} />
-            )}
           </div>
-        )}
+        </header>
+      )}
 
-        {activeTab === 'shopping' && <ShoppingList />}
+      {/* Main Content */}
+      {isChatFullscreen ? (
+        <Chat onBack={() => setActiveTab('plan')} />
+      ) : (
+        <main
+          ref={contentRef}
+          className="mx-auto max-w-lg px-4 py-4"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          {activeTab === 'plan' && (
+            <div className="space-y-4">
+              <DaySelector selectedDay={displayDay} onDaySelect={setSelectedDay} />
 
-        {activeTab === 'chat' && <Chat />}
+              {/* Time Warning - shown when meal exceeds user's preference */}
+              {mealExceedsTimeLimit && selectedMeal && (
+                <div className="flex items-start gap-3 rounded-[12px] bg-[var(--system-orange)]/10 p-3">
+                  <AlertCircle size={18} className="mt-0.5 flex-shrink-0 text-[var(--system-orange)]" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-[var(--foreground)]">
+                      Dieses Gericht dauert {selectedMeal.prepTime} Min
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--foreground-secondary)]">
+                      Deine Einstellung: {timePreference === 'quick' ? 'Schnell (≤12 Min)' : 'Normal (≤25 Min)'}
+                    </p>
+                    {fastestAlternative && (
+                      <button
+                        onClick={() => setSelectedDay(fastestAlternative.day)}
+                        className="mt-2 flex items-center gap-1.5 text-sm font-medium text-[var(--system-blue)] transition-none active:opacity-80"
+                      >
+                        <Clock size={14} />
+                        Schnellere Alternative: Tag {fastestAlternative.day} ({fastestAlternative.prepTime} Min)
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
-        {activeTab === 'statistics' && <Statistics />}
+              {selectedMeal && (
+                <MealCard meal={selectedMeal} />
+              )}
+            </div>
+          )}
 
-        {activeTab === 'settings' && <Settings />}
-      </main>
+          {activeTab === 'shopping' && <ShoppingList />}
 
-      {/* Bottom Navigation */}
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+          {activeTab === 'statistics' && <Statistics />}
+
+          {activeTab === 'settings' && <Settings />}
+        </main>
+      )}
+
+      {/* Bottom Navigation - hidden in chat mode */}
+      {!isChatFullscreen && (
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      )}
     </div>
   );
 }
