@@ -112,7 +112,7 @@ export function MealPlanApp() {
             7-Tage Mahlzeitenplan
           </h1>
           <p className="text-center text-xs text-[var(--foreground-tertiary)]">
-            Albanisch - Deutsch - Franzosisch
+            Albanisch · Deutsch · Französisch
           </p>
 
           {/* Meal Type Toggle - Segmented Control */}
@@ -158,15 +158,8 @@ export function MealPlanApp() {
           <div className="space-y-4">
             <DaySelector selectedDay={displayDay} onDaySelect={setSelectedDay} />
 
-            {/* Swipe hint */}
-            <p className="text-center text-xs text-[var(--foreground-tertiary)]">
-              Wische oder nutze Pfeiltasten zum Navigieren
-            </p>
-
             {selectedMeal && (
-              <div className="transition-all duration-300">
-                <MealCard meal={selectedMeal} />
-              </div>
+              <MealCard meal={selectedMeal} />
             )}
           </div>
         )}
