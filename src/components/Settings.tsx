@@ -1,11 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ProgressRing } from './ProgressRing';
+import { DeviceSync } from './DeviceSync';
 import { principles } from '@/data/meals';
 
 export function Settings() {
-  const { progress, syncStatus, updatePreferences, resetProgress } = useApp();
+  const { progress, syncStatus, deviceId, updatePreferences, resetProgress, switchDevice } = useApp();
+  const [showDeviceSync, setShowDeviceSync] = useState(false);
+  const [syncSuccess, setSyncSuccess] = useState(false);
 
   const handleServingsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     updatePreferences({ servings: parseInt(e.target.value, 10) });
@@ -25,8 +29,22 @@ export function Settings() {
     }
   };
 
+  const handleDeviceSync = async (newDeviceId: string) => {
+    await switchDevice(newDeviceId);
+    setShowDeviceSync(false);
+    setSyncSuccess(true);
+    setTimeout(() => setSyncSuccess(false), 3000);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Success Message */}
+      {syncSuccess && (
+        <div className="rounded-xl bg-green-100 p-4 text-center text-green-800 dark:bg-green-900/30 dark:text-green-200">
+          Geräte erfolgreich verbunden!
+        </div>
+      )}
+
       {/* Progress Section */}
       <section className="rounded-2xl border-2 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
         <h2 className="mb-4 text-center text-xl font-bold text-gray-900 dark:text-white">
@@ -41,6 +59,50 @@ export function Settings() {
               month: 'long',
               year: 'numeric',
             })}
+          </p>
+        )}
+      </section>
+
+      {/* Device Sync Section */}
+      <section className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 dark:border-blue-900/50 dark:bg-blue-950/30">
+        <h2 className="mb-2 text-xl font-bold text-blue-900 dark:text-blue-100">
+          Geräte verbinden
+        </h2>
+        <p className="mb-4 text-sm text-blue-700 dark:text-blue-300">
+          Verbinde dein Handy mit deinem Laptop, um deine Daten zu synchronisieren.
+        </p>
+        <button
+          onClick={() => setShowDeviceSync(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          <span className="text-xl">📱</span>
+          QR-Code Sync
+        </button>
+      </section>
+
+      {/* Sync Status Section */}
+      <section className="rounded-2xl border-2 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
+          Cloud-Sync
+        </h2>
+        <div className="flex items-center gap-3">
+          <div className={`h-3 w-3 rounded-full ${
+            syncStatus === 'synced' ? 'bg-green-500' :
+            syncStatus === 'syncing' ? 'bg-yellow-500 animate-pulse' :
+            syncStatus === 'error' ? 'bg-red-500' :
+            'bg-gray-400'
+          }`} />
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {syncStatus === 'synced' && 'Synchronisiert'}
+            {syncStatus === 'syncing' && 'Synchronisiere...'}
+            {syncStatus === 'error' && 'Sync-Fehler'}
+            {syncStatus === 'offline' && 'Offline-Modus'}
+            {!syncStatus && 'Verbinde...'}
+          </span>
+        </div>
+        {deviceId && (
+          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500 font-mono">
+            Geräte-ID: {deviceId.slice(0, 8)}...
           </p>
         )}
       </section>
@@ -139,31 +201,6 @@ export function Settings() {
         </ul>
       </section>
 
-      {/* Sync Status Section */}
-      <section className="rounded-2xl border-2 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          Cloud-Sync
-        </h2>
-        <div className="flex items-center gap-3">
-          <div className={`h-3 w-3 rounded-full ${
-            syncStatus === 'synced' ? 'bg-green-500' :
-            syncStatus === 'syncing' ? 'bg-yellow-500 animate-pulse' :
-            syncStatus === 'error' ? 'bg-red-500' :
-            'bg-gray-400'
-          }`} />
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {syncStatus === 'synced' && 'Synchronisiert'}
-            {syncStatus === 'syncing' && 'Synchronisiere...'}
-            {syncStatus === 'error' && 'Sync-Fehler'}
-            {syncStatus === 'offline' && 'Offline-Modus'}
-            {!syncStatus && 'Verbinde...'}
-          </span>
-        </div>
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          Deine Daten werden automatisch in der Cloud gespeichert und sind auf allen Geräten verfügbar.
-        </p>
-      </section>
-
       {/* Reset Section */}
       <section className="rounded-2xl border-2 border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/30">
         <h2 className="mb-2 text-lg font-bold text-red-800 dark:text-red-200">
@@ -179,6 +216,14 @@ export function Settings() {
           Zurücksetzen
         </button>
       </section>
+
+      {/* Device Sync Modal */}
+      {showDeviceSync && (
+        <DeviceSync
+          onSync={handleDeviceSync}
+          onClose={() => setShowDeviceSync(false)}
+        />
+      )}
     </div>
   );
 }

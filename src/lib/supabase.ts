@@ -16,3 +16,9 @@ export function getDeviceId(): string {
   }
   return deviceId;
 }
+
+// Set device ID (used for QR code sync)
+export function setDeviceId(deviceId: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('meal-planner-device-id', deviceId);
+}

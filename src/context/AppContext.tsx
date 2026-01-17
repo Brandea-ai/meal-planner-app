@@ -15,6 +15,7 @@ interface AppContextType {
   progress: UserProgress;
   isLoaded: boolean;
   syncStatus: string | null;
+  deviceId: string;
   completeDay: (day: number) => void;
   uncompleteDay: (day: number) => void;
   setCurrentDay: (day: number) => void;
@@ -23,12 +24,13 @@ interface AppContextType {
   resetProgress: () => void;
   startPlan: () => void;
   getCompletionPercentage: () => number;
+  switchDevice: (deviceId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [progress, setProgress, isLoaded, syncStatus] = useCloudSync();
+  const { progress, setProgress, isLoaded, syncStatus, switchDevice, deviceId } = useCloudSync();
 
   const completeDay = useCallback((day: number) => {
     setProgress((prev) => ({
@@ -96,6 +98,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     progress,
     isLoaded,
     syncStatus,
+    deviceId,
     completeDay,
     uncompleteDay,
     setCurrentDay,
@@ -104,7 +107,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     resetProgress,
     startPlan,
     getCompletionPercentage,
-  }), [progress, isLoaded, syncStatus, completeDay, uncompleteDay, setCurrentDay, updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage]);
+    switchDevice,
+  }), [progress, isLoaded, syncStatus, deviceId, completeDay, uncompleteDay, setCurrentDay, updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage, switchDevice]);
 
   return (
     <AppContext.Provider value={value}>

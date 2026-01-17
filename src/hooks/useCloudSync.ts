@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, getDeviceId } from '@/lib/supabase';
+import { supabase, getDeviceId, setDeviceId } from '@/lib/supabase';
 import { UserProgress, UserPreferences } from '@/types';
 
 const defaultPreferences: UserPreferences = {
@@ -19,69 +19,90 @@ const defaultProgress: UserProgress = {
   shoppingListChecked: [],
 };
 
-export function useCloudSync(): [UserProgress, (value: UserProgress | ((prev: UserProgress) => UserProgress)) => void, boolean, string | null] {
+interface CloudSyncReturn {
+  progress: UserProgress;
+  setProgress: (value: UserProgress | ((prev: UserProgress) => UserProgress)) => void;
+  isLoaded: boolean;
+  syncStatus: string | null;
+  switchDevice: (newDeviceId: string) => Promise<void>;
+  deviceId: string;
+}
+
+export function useCloudSync(): CloudSyncReturn {
   const [progress, setProgressState] = useState<UserProgress>(defaultProgress);
   const [isLoaded, setIsLoaded] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [currentDeviceId, setCurrentDeviceId] = useState('');
   const deviceIdRef = useRef<string>('');
   const isSyncing = useRef(false);
 
-  // Load data on mount
-  useEffect(() => {
-    async function loadData() {
-      // Get device ID
-      deviceIdRef.current = getDeviceId();
-      if (!deviceIdRef.current) {
-        setIsLoaded(true);
-        return;
+  // Load data function
+  const loadData = useCallback(async (deviceId: string) => {
+    if (!deviceId) return;
+
+    deviceIdRef.current = deviceId;
+    setCurrentDeviceId(deviceId);
+    setSyncStatus('syncing');
+
+    // Fetch from Supabase
+    try {
+      const { data, error } = await supabase
+        .from('user_progress')
+        .select('*')
+        .eq('device_id', deviceId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.warn('Supabase fetch error:', error);
+        setSyncStatus('error');
       }
 
-      // First, load from localStorage for instant UI
+      if (data) {
+        const cloudProgress: UserProgress = {
+          completedDays: data.completed_days || [],
+          currentDay: data.current_day || 1,
+          startDate: data.start_date,
+          preferences: data.preferences || defaultPreferences,
+          shoppingListChecked: data.shopping_list_checked || [],
+        };
+        setProgressState(cloudProgress);
+        localStorage.setItem('meal-planner-progress', JSON.stringify(cloudProgress));
+        setSyncStatus('synced');
+      } else {
+        // No data found for this device, use defaults
+        setProgressState(defaultProgress);
+        setSyncStatus('synced');
+      }
+    } catch (e) {
+      console.warn('Failed to fetch from Supabase:', e);
+      setSyncStatus('offline');
+
+      // Try to load from localStorage as fallback
       try {
         const localData = localStorage.getItem('meal-planner-progress');
         if (localData) {
           setProgressState(JSON.parse(localData));
         }
-      } catch (e) {
-        console.warn('Failed to load from localStorage:', e);
+      } catch (le) {
+        console.warn('Failed to load from localStorage:', le);
       }
-
-      // Then, fetch from Supabase
-      try {
-        const { data, error } = await supabase
-          .from('user_progress')
-          .select('*')
-          .eq('device_id', deviceIdRef.current)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          // PGRST116 = no rows found (first time user)
-          console.warn('Supabase fetch error:', error);
-        }
-
-        if (data) {
-          const cloudProgress: UserProgress = {
-            completedDays: data.completed_days || [],
-            currentDay: data.current_day || 1,
-            startDate: data.start_date,
-            preferences: data.preferences || defaultPreferences,
-            shoppingListChecked: data.shopping_list_checked || [],
-          };
-          setProgressState(cloudProgress);
-          // Update localStorage with cloud data
-          localStorage.setItem('meal-planner-progress', JSON.stringify(cloudProgress));
-          setSyncStatus('synced');
-        }
-      } catch (e) {
-        console.warn('Failed to fetch from Supabase:', e);
-        setSyncStatus('offline');
-      }
-
-      setIsLoaded(true);
     }
 
-    loadData();
+    setIsLoaded(true);
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    const deviceId = getDeviceId();
+    loadData(deviceId);
+  }, [loadData]);
+
+  // Switch to a different device ID (for QR code sync)
+  const switchDevice = useCallback(async (newDeviceId: string) => {
+    setIsLoaded(false);
+    setDeviceId(newDeviceId);
+    await loadData(newDeviceId);
+  }, [loadData]);
 
   // Sync to cloud
   const syncToCloud = useCallback(async (newProgress: UserProgress) => {
@@ -130,12 +151,19 @@ export function useCloudSync(): [UserProgress, (value: UserProgress | ((prev: Us
         console.warn('Failed to save to localStorage:', e);
       }
 
-      // Sync to cloud (debounced by nature of async)
+      // Sync to cloud
       syncToCloud(newProgress);
 
       return newProgress;
     });
   }, [syncToCloud]);
 
-  return [progress, setProgress, isLoaded, syncStatus];
+  return {
+    progress,
+    setProgress,
+    isLoaded,
+    syncStatus,
+    switchDevice,
+    deviceId: currentDeviceId,
+  };
 }
