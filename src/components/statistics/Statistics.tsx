@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Calendar, ShoppingCart, Clock, TrendingUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Calendar, ShoppingCart, Clock, TrendingUp, Lightbulb } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { breakfastMeals, dinnerMeals } from '@/data/meals';
 import { StatCard } from './StatCard';
@@ -16,6 +17,25 @@ function calculateDaysSinceStart(startDate: string | null): number {
   const now = new Date().getTime();
   return Math.floor((now - startTime) / (1000 * 60 * 60 * 24));
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: 'spring' as const, stiffness: 300, damping: 25 },
+  },
+};
 
 export function Statistics() {
   const { progress } = useApp();
@@ -101,10 +121,25 @@ export function Statistics() {
     };
   }, [progress]);
 
+  const getTipMessage = () => {
+    if (stats.streak.current >= 3) {
+      return 'Großartig! Du bist auf einer Serie. Bleib dran!';
+    }
+    if (stats.completedDaysCount === 0) {
+      return 'Starte jetzt mit Tag 1 und baue deine erste Serie auf!';
+    }
+    return 'Mach weiter so! Versuche, jeden Tag abzuschließen.';
+  };
+
   return (
-    <div className="space-y-4">
+    <motion.div
+      className="space-y-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-3">
+      <motion.div className="grid grid-cols-2 gap-3" variants={itemVariants}>
         <StatCard
           title="Tage erledigt"
           value={`${stats.completedDaysCount}/7`}
@@ -131,38 +166,68 @@ export function Statistics() {
           icon={TrendingUp}
           iconColor="var(--system-purple)"
         />
-      </div>
+      </motion.div>
 
       {/* Streak Tracker */}
-      <StreakTracker
-        currentStreak={stats.streak.current}
-        longestStreak={stats.streak.longest}
-      />
+      <motion.div variants={itemVariants}>
+        <StreakTracker
+          currentStreak={stats.streak.current}
+          longestStreak={stats.streak.longest}
+        />
+      </motion.div>
 
       {/* Completion Chart */}
-      <CompletionChart
-        weeklyRate={stats.completionRate.weekly}
-        monthlyRate={stats.completionRate.monthly}
-        totalRate={stats.completionRate.total}
-      />
+      <motion.div variants={itemVariants}>
+        <CompletionChart
+          weeklyRate={stats.completionRate.weekly}
+          monthlyRate={stats.completionRate.monthly}
+          totalRate={stats.completionRate.total}
+        />
+      </motion.div>
 
       {/* Meal Insights */}
-      <MealInsights
-        topMeals={stats.topMeals}
-        nutritionProfile={stats.nutritionProfile}
-      />
+      <motion.div variants={itemVariants}>
+        <MealInsights
+          topMeals={stats.topMeals}
+          nutritionProfile={stats.nutritionProfile}
+        />
+      </motion.div>
 
       {/* Tips Section */}
-      <div className="rounded-[12px] bg-[var(--system-blue)]/10 p-4">
-        <h3 className="text-sm font-semibold text-[var(--foreground)]">Tipp</h3>
-        <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
-          {stats.streak.current >= 3
-            ? 'Großartig! Du bist auf einer Serie. Bleib dran!'
-            : stats.completedDaysCount === 0
-            ? 'Starte jetzt mit Tag 1 und baue deine erste Serie auf!'
-            : 'Mach weiter so! Versuche, jeden Tag abzuschließen.'}
-        </p>
-      </div>
-    </div>
+      <motion.div
+        className="glass-card overflow-hidden"
+        variants={itemVariants}
+        whileHover={{ scale: 1.01 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      >
+        <div
+          className="p-4"
+          style={{
+            background: 'linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(0, 122, 255, 0.05))',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <motion.div
+              className="flex h-8 w-8 items-center justify-center rounded-full"
+              style={{ backgroundColor: 'rgba(0, 122, 255, 0.15)' }}
+              initial={{ rotate: -10 }}
+              animate={{ rotate: 10 }}
+              transition={{
+                repeat: Infinity,
+                repeatType: 'reverse',
+                duration: 2,
+                ease: 'easeInOut',
+              }}
+            >
+              <Lightbulb size={18} className="text-[var(--system-blue)]" />
+            </motion.div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">Tipp</h3>
+              <p className="mt-1 text-sm text-[var(--foreground-secondary)]">{getTipMessage()}</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

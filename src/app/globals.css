@@ -37,6 +37,32 @@
   --fill-secondary: rgba(120, 120, 128, 0.16);
   --fill-tertiary: rgba(118, 118, 128, 0.12);
   --fill-quaternary: rgba(116, 116, 128, 0.08);
+
+  /* Liquid Glass Effekte */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.85);
+  --glass-blur: 40px;
+  --glass-saturate: 180%;
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-border-prominent: rgba(255, 255, 255, 0.35);
+
+  /* Vibrancy Layers */
+  --vibrancy-thin: rgba(255, 255, 255, 0.4);
+  --vibrancy-regular: rgba(255, 255, 255, 0.6);
+  --vibrancy-thick: rgba(255, 255, 255, 0.8);
+
+  /* Depth Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(0, 122, 255, 0.3);
+  --shadow-glow-green: 0 0 20px rgba(52, 199, 89, 0.3);
+
+  /* Gradient Overlays */
+  --gradient-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, transparent 50%);
+  --gradient-depth: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+  --gradient-subtle: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.05) 100%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,6 +102,28 @@
     --fill-secondary: rgba(120, 120, 128, 0.32);
     --fill-tertiary: rgba(118, 118, 128, 0.24);
     --fill-quaternary: rgba(116, 116, 128, 0.18);
+
+    /* Liquid Glass Effekte (Dark) */
+    --glass-bg: rgba(28, 28, 30, 0.78);
+    --glass-bg-elevated: rgba(44, 44, 46, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border-prominent: rgba(255, 255, 255, 0.15);
+
+    /* Vibrancy Layers (Dark) */
+    --vibrancy-thin: rgba(255, 255, 255, 0.08);
+    --vibrancy-regular: rgba(255, 255, 255, 0.12);
+    --vibrancy-thick: rgba(255, 255, 255, 0.18);
+
+    /* Depth Shadows (Dark) */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.25);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.3);
+
+    /* Gradient Overlays (Dark) */
+    --gradient-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    --gradient-depth: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+    --gradient-subtle: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.08) 100%);
   }
 }
 
@@ -134,6 +182,10 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 /* Custom scrollbar - hidden by default (Apple style) */
 ::-webkit-scrollbar {
   width: 0;
@@ -164,6 +216,107 @@ body {
   color: white;
 }
 
+/* ========================================
+   LIQUID GLASS DESIGN SYSTEM
+   ======================================== */
+
+/* Glass Panel - Primary container with frosted glass effect */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+}
+
+/* Glass Card - Cards with shine overlay */
+.glass-card {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-radius: 24px;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-shine);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Glass Card Elevated - More prominent */
+.glass-card-elevated {
+  position: relative;
+  background: var(--glass-bg-elevated);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-radius: 24px;
+  border: 1px solid var(--glass-border-prominent);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.glass-card-elevated::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-shine);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Glass Inner Panel - Nested glass panels */
+.glass-inner {
+  background: var(--vibrancy-thin);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+}
+
+/* Glass Nav - Floating navigation bar */
+.glass-nav {
+  background: var(--glass-bg-elevated);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border-radius: 28px;
+  border: 1px solid var(--glass-border-prominent);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Glass Header - Sticky header with blur */
+.glass-header {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* Glass Button */
+.glass-button {
+  background: var(--vibrancy-regular);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.glass-button:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* ========================================
+   APPLE-STYLE COMPONENTS
+   ======================================== */
+
 /* Apple-style checkbox */
 input[type="checkbox"] {
   appearance: none;
@@ -174,7 +327,7 @@ input[type="checkbox"] {
   border: 2px solid var(--gray-3);
   background: transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,6 +337,7 @@ input[type="checkbox"] {
 input[type="checkbox"]:checked {
   background: var(--system-green);
   border-color: var(--system-green);
+  transform: scale(1.05);
 }
 
 input[type="checkbox"]:checked::after {
@@ -209,7 +363,7 @@ input[type="checkbox"]:focus {
   background: var(--fill-primary);
   border-radius: 15.5px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toggle-switch.active {
@@ -225,7 +379,7 @@ input[type="checkbox"]:focus {
   background: white;
   border-radius: 50%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toggle-switch.active .toggle-switch-knob {
@@ -260,50 +414,80 @@ input[type="checkbox"]:focus {
   padding: 11px 16px;
 }
 
-/* Button styles - no hover, only active */
+/* ========================================
+   BUTTON STYLES
+   ======================================== */
+
 .btn-primary {
   background: var(--system-blue);
   color: white;
-  border-radius: 12px;
+  border-radius: 16px;
   font-weight: 600;
   padding: 14px 20px;
   min-height: 50px;
-  transition: opacity 0.1s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:active {
-  opacity: 0.8;
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
 .btn-secondary {
   background: var(--fill-secondary);
   color: var(--foreground);
-  border-radius: 12px;
+  border-radius: 16px;
   font-weight: 600;
   padding: 14px 20px;
   min-height: 50px;
-  transition: opacity 0.1s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-secondary:active {
-  opacity: 0.8;
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
 .btn-destructive {
   background: var(--system-red);
   color: white;
-  border-radius: 12px;
+  border-radius: 16px;
   font-weight: 600;
   padding: 14px 20px;
   min-height: 50px;
-  transition: opacity 0.1s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-destructive:active {
-  opacity: 0.8;
+  transform: scale(0.98);
+  opacity: 0.9;
 }
 
-/* Popup Animations */
+/* Glass Button Variant */
+.btn-glass {
+  background: var(--vibrancy-regular);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--foreground);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  font-weight: 600;
+  padding: 14px 20px;
+  min-height: 50px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-glass:active {
+  transform: scale(0.98);
+  background: var(--vibrancy-thick);
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
 @keyframes slide-up {
   from {
     transform: translateY(100%);
@@ -326,10 +510,93 @@ input[type="checkbox"]:focus {
   }
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: var(--shadow-glow);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 122, 255, 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 .animate-slide-up {
-  animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: slide-up 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .animate-fade-in {
-  animation: fade-in 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: fade-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--fill-tertiary) 25%,
+    var(--fill-secondary) 50%,
+    var(--fill-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* Blur utilities */
+.blur-sm { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.blur-md { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+.blur-lg { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+.blur-xl { backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); }
+
+/* Shadow utilities */
+.shadow-glass { box-shadow: var(--shadow-md); }
+.shadow-glass-lg { box-shadow: var(--shadow-lg); }
+.shadow-glass-xl { box-shadow: var(--shadow-xl); }
+.shadow-glow-blue { box-shadow: var(--shadow-glow); }
+.shadow-glow-green { box-shadow: var(--shadow-glow-green); }
+
+/* Border radius */
+.rounded-glass { border-radius: 24px; }
+.rounded-glass-sm { border-radius: 16px; }
+.rounded-glass-lg { border-radius: 28px; }
+.rounded-glass-xl { border-radius: 32px; }
+
+/* Vibrancy backgrounds */
+.bg-vibrancy-thin { background: var(--vibrancy-thin); }
+.bg-vibrancy-regular { background: var(--vibrancy-regular); }
+.bg-vibrancy-thick { background: var(--vibrancy-thick); }
+
+/* Transition utilities */
+.transition-glass {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-spring {
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

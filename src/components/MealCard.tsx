@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Clock, Globe, Utensils, ChefHat, Sparkles, X, RotateCcw, Pencil } from 'lucide-react';
 import { Meal, MealType } from '@/types';
 import { useApp } from '@/context/AppContext';
@@ -10,6 +11,32 @@ import { MealNoteEditor } from './MealNoteEditor';
 interface MealCardProps {
   meal: Meal;
 }
+
+const cardVariants = {
+  initial: { opacity: 0, y: 20, scale: 0.98 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    scale: 0.98,
+    transition: { duration: 0.2 },
+  },
+};
+
+const ingredientVariants = {
+  initial: { opacity: 0, x: -10 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 10 },
+};
 
 export function MealCard({ meal }: MealCardProps) {
   const {
@@ -33,7 +60,6 @@ export function MealCard({ meal }: MealCardProps) {
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
 
-  // Get hidden ingredients for this meal
   const hiddenIngredients = progress.ingredientCustomizations
     .filter((c) => c.mealId === meal.id && c.mealType === meal.type && c.isHidden)
     .map((c) => c.ingredientName);
@@ -84,7 +110,6 @@ export function MealCard({ meal }: MealCardProps) {
     saveMealNote(meal.id, meal.type as MealType, note);
   };
 
-  // Get customized or scaled amount for an ingredient
   const getDisplayAmount = (ingredientName: string, originalAmount: string | undefined, category: string) => {
     const customization = getIngredientCustomization(meal.id, meal.type as MealType, ingredientName);
     if (customization?.customAmount) {
@@ -93,7 +118,6 @@ export function MealCard({ meal }: MealCardProps) {
     return scaleAmount(originalAmount, servings, category);
   };
 
-  // Get customized or original name for an ingredient
   const getDisplayName = (ingredientName: string) => {
     const customization = getIngredientCustomization(meal.id, meal.type as MealType, ingredientName);
     return customization?.customName || ingredientName;
@@ -102,56 +126,103 @@ export function MealCard({ meal }: MealCardProps) {
   const currentNote = getMealNote(meal.id, meal.type as MealType);
 
   return (
-    <article
-      className={`overflow-hidden rounded-[12px] ${
-        isCompleted
-          ? 'bg-[var(--system-green)]/10'
-          : 'bg-[var(--background-secondary)]'
+    <motion.article
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className={`glass-card overflow-hidden ${
+        isCompleted ? 'ring-2 ring-[var(--system-green)]/50' : ''
       }`}
       aria-label={`Tag ${meal.day}: ${meal.title}`}
     >
+      {/* Completed Overlay */}
+      <AnimatePresence>
+        {isCompleted && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-[var(--system-green)]/8 pointer-events-none z-0"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
-      <header className="p-4 pb-3">
+      <header className="relative z-10 p-5 pb-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
-            <span className="text-xs font-medium text-[var(--foreground-tertiary)]">
+            <motion.span
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--foreground-tertiary)]"
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
               Tag {meal.day} · {getServingsLabel(servings)}
-            </span>
-            <h2 className="mt-0.5 text-xl font-bold text-[var(--foreground)]">
+            </motion.span>
+            <motion.h2
+              className="mt-1 text-2xl font-bold text-[var(--foreground)]"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
               {meal.title}
-            </h2>
-            <p className="mt-0.5 text-sm text-[var(--foreground-secondary)]">
+            </motion.h2>
+            <motion.p
+              className="mt-1 text-sm text-[var(--foreground-secondary)]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
               {meal.subtitle}
-            </p>
+            </motion.p>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full bg-[var(--system-orange)]/15 px-2.5 py-1">
+          <motion.div
+            className="glass-inner flex items-center gap-1.5 px-3 py-1.5"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25 }}
+            whileHover={{ scale: 1.05 }}
+          >
             <Clock size={14} className="text-[var(--system-orange)]" />
-            <span className="text-xs font-medium text-[var(--system-orange)]">
+            <span className="text-xs font-semibold text-[var(--system-orange)]">
               {meal.prepTime} Min
             </span>
-          </div>
+          </motion.div>
         </div>
 
         {/* Cultural Tags */}
-        <div className="mt-3 flex flex-wrap gap-1.5" role="list" aria-label="Kulturelle Einflüsse">
-          {meal.culturalOrigin.map((origin) => (
-            <span
+        <motion.div
+          className="mt-4 flex flex-wrap gap-2"
+          role="list"
+          aria-label="Kulturelle Einflüsse"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          {meal.culturalOrigin.map((origin, index) => (
+            <motion.span
               key={origin}
               role="listitem"
-              className="flex items-center gap-1 rounded-full bg-[var(--system-blue)]/10 px-2 py-0.5 text-xs font-medium text-[var(--system-blue)]"
+              className="glass-inner flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[var(--system-blue)]"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.35 + index * 0.05 }}
             >
               <Globe size={10} />
               {origin}
-            </span>
+            </motion.span>
           ))}
-        </div>
+        </motion.div>
       </header>
 
-      {/* Ingredients - Grouped by Main Dish and Side Dish */}
-      <section className="px-4 pb-3" aria-labelledby={`ingredients-${meal.id}`}>
-        <div className="flex items-center justify-between">
+      {/* Ingredients Section */}
+      <section className="relative z-10 px-5 pb-4" aria-labelledby={`ingredients-${meal.id}`}>
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Utensils size={14} className="text-[var(--foreground-tertiary)]" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--fill-tertiary)]">
+              <Utensils size={14} className="text-[var(--foreground-secondary)]" />
+            </div>
             <h3 id={`ingredients-${meal.id}`} className="text-sm font-semibold text-[var(--foreground)]">
               Zutaten
             </h3>
@@ -161,12 +232,11 @@ export function MealCard({ meal }: MealCardProps) {
           </span>
         </div>
 
-        {/* Main Dish Ingredients */}
         {(() => {
           const mainIngredients = meal.ingredients.filter((i) => !i.forSideDish);
           const sideIngredients = meal.ingredients.filter((i) => i.forSideDish);
 
-          const renderIngredient = (ingredient: typeof meal.ingredients[0]) => {
+          const renderIngredient = (ingredient: typeof meal.ingredients[0], index: number) => {
             const isHidden = hiddenIngredients.includes(ingredient.name);
             const isEditing = editingIngredient === ingredient.name;
             const displayAmount = getDisplayAmount(ingredient.name, ingredient.amount, ingredient.category);
@@ -178,29 +248,36 @@ export function MealCard({ meal }: MealCardProps) {
 
             if (isHidden) {
               return (
-                <li
+                <motion.li
                   key={ingredient.name}
-                  className="flex items-center justify-between rounded-[8px] bg-[var(--fill-tertiary)] px-3 py-2 opacity-50"
+                  variants={ingredientVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  layout
+                  className="flex items-center justify-between glass-inner px-3 py-2.5 opacity-50"
                 >
                   <span className="text-sm text-[var(--foreground-tertiary)] line-through">
                     {displayName}
                   </span>
-                  <button
+                  <motion.button
                     onClick={() => handleShowIngredient(ingredient.name)}
-                    className="flex items-center gap-1 text-xs text-[var(--system-blue)] transition-none active:opacity-80"
+                    className="flex items-center gap-1 text-xs text-[var(--system-blue)] font-medium"
+                    whileTap={{ scale: 0.95 }}
                   >
                     <RotateCcw size={12} />
                     Wiederherstellen
-                  </button>
-                </li>
+                  </motion.button>
+                </motion.li>
               );
             }
 
             if (isEditing) {
               return (
-                <li
+                <motion.li
                   key={ingredient.name}
-                  className="rounded-[8px] bg-[var(--system-blue)]/10 p-3"
+                  layout
+                  className="glass-inner p-4 ring-2 ring-[var(--system-blue)]/30"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-[var(--foreground-tertiary)]">
@@ -213,13 +290,13 @@ export function MealCard({ meal }: MealCardProps) {
                       <X size={16} />
                     </button>
                   </div>
-                  <div className="mt-2 space-y-2">
+                  <div className="mt-3 space-y-2">
                     <input
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       placeholder="Zutat-Name..."
-                      className="w-full rounded-[6px] bg-[var(--background)] px-2 py-1.5 text-sm font-medium text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]"
+                      className="w-full rounded-[10px] bg-[var(--background)] px-3 py-2 text-sm font-medium text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]"
                       autoFocus
                     />
                     <div className="flex gap-2">
@@ -228,47 +305,56 @@ export function MealCard({ meal }: MealCardProps) {
                         value={editAmount}
                         onChange={(e) => setEditAmount(e.target.value)}
                         placeholder="Menge..."
-                        className="flex-1 rounded-[6px] bg-[var(--background)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]"
+                        className="flex-1 rounded-[10px] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]"
                       />
-                      <button
+                      <motion.button
                         onClick={() => handleSaveEdit(ingredient.name)}
-                        className="rounded-[6px] bg-[var(--system-blue)] px-3 py-1.5 text-sm font-medium text-white transition-none active:opacity-80"
+                        className="rounded-[10px] bg-[var(--system-blue)] px-4 py-2 text-sm font-semibold text-white"
+                        whileTap={{ scale: 0.95 }}
                       >
                         OK
-                      </button>
+                      </motion.button>
                     </div>
                   </div>
                   {hasCustomization && (
                     <button
                       onClick={() => handleResetEdit(ingredient.name)}
-                      className="mt-2 flex items-center gap-1 text-xs text-[var(--foreground-tertiary)]"
+                      className="mt-3 flex items-center gap-1 text-xs text-[var(--foreground-tertiary)]"
                     >
                       <RotateCcw size={10} />
                       Auf Original zurücksetzen
                     </button>
                   )}
-                </li>
+                </motion.li>
               );
             }
 
             return (
-              <li
+              <motion.li
                 key={ingredient.name}
-                className="flex items-center justify-between rounded-[8px] bg-[var(--fill-tertiary)] px-3 py-2"
+                variants={ingredientVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                layout
+                transition={{ delay: index * 0.03 }}
+                className="flex items-center justify-between glass-inner px-3 py-2.5 hover:bg-[var(--vibrancy-regular)] transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <button
+                <div className="flex items-center gap-2.5">
+                  <motion.button
                     onClick={() => handleHideIngredient(ingredient.name)}
-                    className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--fill-secondary)] text-[var(--foreground-tertiary)] transition-none active:opacity-80"
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--fill-secondary)] text-[var(--foreground-tertiary)]"
                     aria-label={`${displayName} entfernen`}
+                    whileTap={{ scale: 0.9 }}
+                    whileHover={{ scale: 1.1 }}
                   >
                     <X size={12} />
-                  </button>
+                  </motion.button>
                   <button
                     onClick={() => handleStartEdit(ingredient.name, displayName, displayAmount)}
-                    className={`text-sm transition-none active:opacity-80 ${
+                    className={`text-sm ${
                       hasCustomName
-                        ? 'font-medium text-[var(--system-blue)]'
+                        ? 'font-semibold text-[var(--system-blue)]'
                         : 'text-[var(--foreground)]'
                     }`}
                   >
@@ -277,16 +363,16 @@ export function MealCard({ meal }: MealCardProps) {
                 </div>
                 <button
                   onClick={() => handleStartEdit(ingredient.name, displayName, displayAmount)}
-                  className={`flex items-center gap-1 text-sm transition-none active:opacity-80 ${
+                  className={`flex items-center gap-1.5 text-sm ${
                     hasCustomAmount
-                      ? 'font-medium text-[var(--system-blue)]'
+                      ? 'font-semibold text-[var(--system-blue)]'
                       : 'text-[var(--foreground-tertiary)]'
                   }`}
                 >
                   {displayAmount}
-                  <Pencil size={10} className="opacity-50" />
+                  <Pencil size={10} className="opacity-40" />
                 </button>
-              </li>
+              </motion.li>
             );
           };
 
@@ -294,24 +380,30 @@ export function MealCard({ meal }: MealCardProps) {
             <>
               {/* Main Dish Section */}
               {mainIngredients.length > 0 && (
-                <div className="mt-2">
-                  <span className="text-xs font-medium text-[var(--system-blue)]">Hauptgericht</span>
-                  <ul className="mt-1.5 space-y-1.5">
-                    {mainIngredients.map(renderIngredient)}
+                <div className="mb-3">
+                  <span className="text-xs font-semibold text-[var(--system-blue)] mb-2 block">
+                    Hauptgericht
+                  </span>
+                  <ul className="space-y-2">
+                    <AnimatePresence mode="popLayout">
+                      {mainIngredients.map((ing, i) => renderIngredient(ing, i))}
+                    </AnimatePresence>
                   </ul>
                 </div>
               )}
 
               {/* Side Dish Section */}
               {sideIngredients.length > 0 && (
-                <div className="mt-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-[var(--system-teal)]">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-[var(--system-teal)]">
                       {meal.sideDish || 'Beilage'}
                     </span>
                   </div>
-                  <ul className="mt-1.5 space-y-1.5">
-                    {sideIngredients.map(renderIngredient)}
+                  <ul className="space-y-2">
+                    <AnimatePresence mode="popLayout">
+                      {sideIngredients.map((ing, i) => renderIngredient(ing, i))}
+                    </AnimatePresence>
                   </ul>
                 </div>
               )}
@@ -319,52 +411,70 @@ export function MealCard({ meal }: MealCardProps) {
           );
         })()}
 
-        {hiddenIngredients.length > 0 && (
-          <p className="mt-2 text-center text-xs text-[var(--foreground-tertiary)]">
-            {hiddenIngredients.length} Zutat(en) ausgeblendet
-          </p>
-        )}
+        <AnimatePresence>
+          {hiddenIngredients.length > 0 && (
+            <motion.p
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="mt-3 text-center text-xs text-[var(--foreground-tertiary)]"
+            >
+              {hiddenIngredients.length} Zutat(en) ausgeblendet
+            </motion.p>
+          )}
+        </AnimatePresence>
       </section>
 
-      {/* Protein Options (for flexible meals) */}
+      {/* Protein Options */}
       {meal.proteinOptions && meal.proteinOptions.length > 0 && (
-        <section className="border-t border-[var(--separator)] px-4 py-3">
-          <div className="flex items-center gap-2">
-            <ChefHat size={14} className="text-[var(--system-purple)]" />
-            <span className="text-sm font-medium text-[var(--foreground)]">Protein-Optionen</span>
+        <section className="relative z-10 border-t border-[var(--glass-border)] px-5 py-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--system-purple)]/15">
+              <ChefHat size={12} className="text-[var(--system-purple)]" />
+            </div>
+            <span className="text-sm font-semibold text-[var(--foreground)]">Protein-Optionen</span>
           </div>
-          <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
+          <p className="text-sm text-[var(--foreground-secondary)] pl-8">
             {meal.proteinOptions.join(' / ')}
           </p>
         </section>
       )}
 
       {/* Benefit */}
-      <section className="border-t border-[var(--separator)] bg-[var(--fill-quaternary)] px-4 py-3">
-        <div className="flex items-start gap-2">
-          <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[var(--system-yellow)]" />
-          <p className="text-sm text-[var(--foreground-secondary)]">
+      <section className="relative z-10 border-t border-[var(--glass-border)] bg-[var(--vibrancy-thin)] px-5 py-4">
+        <div className="flex items-start gap-2.5">
+          <motion.div
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--system-yellow)]/20"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Sparkles size={12} className="text-[var(--system-yellow)]" />
+          </motion.div>
+          <p className="text-sm text-[var(--foreground-secondary)] flex-1">
             {meal.benefit}
           </p>
         </div>
       </section>
 
       {/* Tags */}
-      <section className="px-4 py-3" aria-label="Tags">
-        <div className="flex flex-wrap gap-1.5">
-          {meal.tags.map((tag) => (
-            <span
+      <section className="relative z-10 px-5 py-4" aria-label="Tags">
+        <div className="flex flex-wrap gap-2">
+          {meal.tags.map((tag, index) => (
+            <motion.span
               key={tag}
-              className="rounded-full bg-[var(--fill-secondary)] px-2 py-0.5 text-xs text-[var(--foreground-secondary)]"
+              className="glass-inner px-2.5 py-1 text-xs font-medium text-[var(--foreground-secondary)]"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.03 }}
             >
               #{tag}
-            </span>
+            </motion.span>
           ))}
         </div>
       </section>
 
-      {/* Working Note Section */}
-      <section className="border-t border-[var(--separator)] px-4 py-3">
+      {/* Note Section */}
+      <section className="relative z-10 border-t border-[var(--glass-border)] px-5 py-4">
         <MealNoteEditor
           mealId={meal.id}
           mealType={meal.type as MealType}
@@ -374,20 +484,33 @@ export function MealCard({ meal }: MealCardProps) {
       </section>
 
       {/* Complete Button */}
-      <footer className="p-4 pt-0">
-        <button
+      <footer className="relative z-10 p-5 pt-0">
+        <motion.button
           onClick={handleToggleComplete}
-          className={`flex w-full items-center justify-center gap-2 rounded-[12px] py-3.5 font-semibold transition-none active:opacity-80 ${
+          className={`flex w-full items-center justify-center gap-2.5 rounded-[16px] py-4 font-semibold shadow-sm ${
             isCompleted
-              ? 'bg-[var(--system-green)] text-white'
+              ? 'bg-[var(--system-green)] text-white shadow-glow-green'
               : 'bg-[var(--foreground)] text-[var(--background)]'
           }`}
           aria-pressed={isCompleted}
+          whileTap={{ scale: 0.98 }}
+          whileHover={{ y: -1 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
-          {isCompleted && <Check size={18} strokeWidth={3} />}
+          <AnimatePresence mode="wait">
+            {isCompleted && (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 180 }}
+              >
+                <Check size={18} strokeWidth={3} />
+              </motion.div>
+            )}
+          </AnimatePresence>
           {isCompleted ? 'Erledigt' : 'Als erledigt markieren'}
-        </button>
+        </motion.button>
       </footer>
-    </article>
+    </motion.article>
   );
 }

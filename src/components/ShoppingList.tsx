@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { unifiedShoppingList, categoryLabels } from '@/data/meals';
@@ -18,7 +19,23 @@ const categoryIcons: Record<string, React.ComponentType<{ size?: number; classNa
   extras: Sparkles,
 };
 
+const categoryColors: Record<string, string> = {
+  fresh: 'var(--system-green)',
+  protein: 'var(--system-red)',
+  dairy: 'var(--system-blue)',
+  legumes: 'var(--system-orange)',
+  grains: 'var(--system-yellow)',
+  basics: 'var(--system-teal)',
+  extras: 'var(--system-purple)',
+};
+
 const categoryOrder = ['fresh', 'protein', 'dairy', 'legumes', 'grains', 'basics', 'extras'];
+
+const listItemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 10 },
+};
 
 export function ShoppingList() {
   const { progress, toggleShoppingItem, addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem } = useApp();
@@ -27,11 +44,8 @@ export function ShoppingList() {
 
   const servings = progress.preferences.servings;
   const customItems = progress.customShoppingItems || [];
-
-  // Use unified shopping list (all items for breakfast + dinner combined)
   const shoppingList = unifiedShoppingList;
 
-  // Get available categories based on current shopping list + custom items
   const availableCategories = useMemo(() => {
     const cats = new Set([
       ...shoppingList.map((item) => item.category),
@@ -48,7 +62,6 @@ export function ShoppingList() {
     );
   };
 
-  // Get standard items for a category, split by main/side dish
   const getCategoryItems = (category: string) =>
     shoppingList.filter((item) => item.category === category);
 
@@ -58,7 +71,6 @@ export function ShoppingList() {
   const getCategorySideItems = (category: string) =>
     shoppingList.filter((item) => item.category === category && item.forSideDish);
 
-  // Get custom items for a category
   const getCategoryCustomItems = (category: string) =>
     customItems.filter((item) => item.category === category);
 
@@ -92,16 +104,30 @@ export function ShoppingList() {
   };
 
   return (
-    <section className="overflow-hidden rounded-[12px] bg-[var(--background-secondary)]">
+    <motion.section
+      className="glass-card overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+    >
       {/* Header */}
-      <header className="p-4 pb-3">
+      <header className="p-5 pb-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[var(--foreground)]">
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">
             Einkaufsliste
           </h2>
-          <span className="rounded-full bg-[var(--system-blue)]/15 px-3 py-1 text-sm font-semibold text-[var(--system-blue)]">
-            {totalProgress.checked}/{totalProgress.total}
-          </span>
+          <motion.div
+            className="glass-inner px-3 py-1.5 flex items-center gap-1.5"
+            whileHover={{ scale: 1.05 }}
+          >
+            <span className="text-sm font-bold text-[var(--system-blue)]">
+              {totalProgress.checked}
+            </span>
+            <span className="text-sm text-[var(--foreground-tertiary)]">/</span>
+            <span className="text-sm text-[var(--foreground-tertiary)]">
+              {totalProgress.total}
+            </span>
+          </motion.div>
         </div>
 
         <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
@@ -113,10 +139,12 @@ export function ShoppingList() {
         </p>
 
         {/* Progress bar */}
-        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[var(--fill-secondary)]">
-          <div
-            className="h-full bg-[var(--system-green)] transition-all duration-300"
-            style={{ width: `${totalProgress.total > 0 ? (totalProgress.checked / totalProgress.total) * 100 : 0}%` }}
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[var(--fill-tertiary)]">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-[var(--system-green)] to-[var(--system-teal)]"
+            initial={{ width: 0 }}
+            animate={{ width: `${totalProgress.total > 0 ? (totalProgress.checked / totalProgress.total) * 100 : 0}%` }}
+            transition={{ type: 'spring', stiffness: 100, damping: 20 }}
             role="progressbar"
             aria-valuenow={totalProgress.checked}
             aria-valuemin={0}
@@ -127,186 +155,225 @@ export function ShoppingList() {
       </header>
 
       {/* Add Custom Item Button */}
-      <div className="border-t border-[var(--separator)] px-4 py-3">
-        <button
+      <div className="border-t border-[var(--glass-border)] px-5 py-4">
+        <motion.button
           onClick={() => setShowCustomForm(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--fill-tertiary)] py-3 text-sm font-medium text-[var(--system-blue)] transition-none active:opacity-80"
+          className="flex w-full items-center justify-center gap-2 glass-inner py-3.5 text-sm font-semibold text-[var(--system-blue)]"
+          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.01 }}
         >
           <Plus size={18} />
           Eigenen Artikel hinzufügen
-        </button>
+        </motion.button>
       </div>
 
       {/* Categories */}
-      <div>
-        {availableCategories.map((category, index) => {
+      <div className="divide-y divide-[var(--glass-border)]">
+        {availableCategories.map((category) => {
           const items = getCategoryItems(category);
           const customCategoryItems = getCategoryCustomItems(category);
           const { checked, total } = getCategoryProgress(category);
           const isExpanded = expandedCategories.includes(category);
           const IconComponent = categoryIcons[category] || Sparkles;
+          const categoryColor = categoryColors[category];
 
           return (
             <div key={category}>
-              {/* Inset separator (not on first item) */}
-              {index > 0 && <div className="inset-separator" />}
-
-              <button
+              <motion.button
                 onClick={() => toggleCategory(category)}
-                className="flex min-h-[44px] w-full items-center justify-between px-4 py-3 text-left transition-none active:opacity-80"
+                className="flex min-h-[56px] w-full items-center justify-between px-5 py-4 text-left"
                 aria-expanded={isExpanded}
                 aria-controls={`category-${category}`}
+                whileTap={{ scale: 0.99 }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--fill-secondary)]">
-                    <IconComponent size={18} className="text-[var(--foreground-secondary)]" />
-                  </div>
+                  <motion.div
+                    className="flex h-10 w-10 items-center justify-center rounded-full"
+                    style={{ backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)` }}
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <span style={{ color: categoryColor }}>
+                      <IconComponent size={20} />
+                    </span>
+                  </motion.div>
                   <span className="font-semibold text-[var(--foreground)]">
                     {categoryLabels[category]}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-[var(--foreground-tertiary)]">
-                    {checked}/{total}
-                  </span>
-                  <ChevronDown
-                    size={20}
-                    className={`text-[var(--gray-2)] transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                  />
+                <div className="flex items-center gap-3">
+                  <div className="glass-inner px-2.5 py-1 text-sm">
+                    <span className="font-semibold" style={{ color: checked === total && total > 0 ? 'var(--system-green)' : 'var(--foreground-secondary)' }}>
+                      {checked}
+                    </span>
+                    <span className="text-[var(--foreground-tertiary)]">/{total}</span>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  >
+                    <ChevronDown size={20} className="text-[var(--gray-2)]" />
+                  </motion.div>
                 </div>
-              </button>
+              </motion.button>
 
-              {isExpanded && (
-                <div
-                  id={`category-${category}`}
-                  className="bg-[var(--background)] pb-2"
-                >
-                  {/* Main dish items */}
-                  {(() => {
-                    const mainItems = getCategoryMainItems(category);
-                    const sideItems = getCategorySideItems(category);
-                    const hasMainItems = mainItems.length > 0;
-                    const hasSideItems = sideItems.length > 0;
-                    const showLabels = hasMainItems && hasSideItems;
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    id={`category-${category}`}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    className="overflow-hidden bg-[var(--vibrancy-thin)]"
+                  >
+                    <div className="pb-3">
+                      {(() => {
+                        const mainItems = getCategoryMainItems(category);
+                        const sideItems = getCategorySideItems(category);
+                        const hasMainItems = mainItems.length > 0;
+                        const hasSideItems = sideItems.length > 0;
+                        const showLabels = hasMainItems && hasSideItems;
 
-                    const renderItem = (item: typeof shoppingList[0]) => {
-                      const isChecked = progress.shoppingListChecked.includes(item.name);
-                      const scaledAmount = scaleAmount(item.amount, servings, item.category);
+                        const renderItem = (item: typeof shoppingList[0], index: number) => {
+                          const isChecked = progress.shoppingListChecked.includes(item.name);
+                          const scaledAmount = scaleAmount(item.amount, servings, item.category);
 
-                      return (
-                        <li key={item.name}>
-                          <label className="flex min-h-[44px] cursor-pointer items-center gap-3 px-4 py-2 transition-none active:opacity-80">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleShoppingItem(item.name)}
-                              className="flex-shrink-0"
-                            />
-                            <span
-                              className={`flex-1 text-[15px] ${
-                                isChecked
-                                  ? 'text-[var(--foreground-tertiary)] line-through'
-                                  : 'text-[var(--foreground)]'
-                              }`}
+                          return (
+                            <motion.li
+                              key={item.name}
+                              variants={listItemVariants}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              transition={{ delay: index * 0.02 }}
                             >
-                              {item.name}
-                            </span>
-                            <span className="text-sm text-[var(--foreground-tertiary)]">
-                              {scaledAmount}
-                            </span>
-                          </label>
-                        </li>
-                      );
-                    };
+                              <label className="flex min-h-[48px] cursor-pointer items-center gap-3 px-5 py-2.5 transition-colors hover:bg-[var(--vibrancy-regular)]">
+                                <motion.div whileTap={{ scale: 0.9 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => toggleShoppingItem(item.name)}
+                                    className="flex-shrink-0"
+                                  />
+                                </motion.div>
+                                <span
+                                  className={`flex-1 text-[15px] transition-all ${
+                                    isChecked
+                                      ? 'text-[var(--foreground-tertiary)] line-through'
+                                      : 'text-[var(--foreground)]'
+                                  }`}
+                                >
+                                  {item.name}
+                                </span>
+                                <span className="text-sm text-[var(--foreground-tertiary)]">
+                                  {scaledAmount}
+                                </span>
+                              </label>
+                            </motion.li>
+                          );
+                        };
 
-                    return (
-                      <>
-                        {/* Hauptgericht items */}
-                        {hasMainItems && (
+                        return (
                           <>
-                            {showLabels && (
-                              <div className="px-4 pt-2 pb-1">
-                                <span className="text-xs font-medium text-[var(--system-blue)]">Hauptgericht</span>
-                              </div>
+                            {hasMainItems && (
+                              <>
+                                {showLabels && (
+                                  <div className="px-5 pt-3 pb-1">
+                                    <span className="text-xs font-semibold text-[var(--system-blue)]">Hauptgericht</span>
+                                  </div>
+                                )}
+                                <ul>
+                                  {mainItems.map((item, index) => renderItem(item, index))}
+                                </ul>
+                              </>
                             )}
-                            <ul>
-                              {mainItems.map(renderItem)}
-                            </ul>
-                          </>
-                        )}
 
-                        {/* Beilage items */}
-                        {hasSideItems && (
-                          <>
-                            {showLabels && (
-                              <div className="px-4 pt-3 pb-1">
-                                <span className="text-xs font-medium text-[var(--system-teal)]">Beilage / Dip</span>
-                              </div>
+                            {hasSideItems && (
+                              <>
+                                {showLabels && (
+                                  <div className="px-5 pt-3 pb-1">
+                                    <span className="text-xs font-semibold text-[var(--system-teal)]">Beilage / Dip</span>
+                                  </div>
+                                )}
+                                <ul>
+                                  {sideItems.map((item, index) => renderItem(item, index))}
+                                </ul>
+                              </>
                             )}
-                            <ul>
-                              {sideItems.map(renderItem)}
-                            </ul>
                           </>
-                        )}
-                      </>
-                    );
-                  })()}
+                        );
+                      })()}
 
-                  {/* Custom items */}
-                  {customCategoryItems.length > 0 && (
-                    <>
-                      <div className="px-4 pt-3 pb-1">
-                        <span className="text-xs font-medium text-[var(--system-purple)]">Eigene Einträge</span>
-                      </div>
-                      <ul>
-                        {customCategoryItems.map((item) => (
-                          <li key={item.id}>
-                            <div className="flex min-h-[44px] items-center gap-3 px-4 py-2">
-                              <input
-                                type="checkbox"
-                                checked={item.isChecked}
-                                onChange={() => toggleCustomShoppingItem(item.id)}
-                                className="flex-shrink-0"
-                              />
-                              <span
-                                className={`flex-1 text-[15px] ${
-                                  item.isChecked
-                                    ? 'text-[var(--foreground-tertiary)] line-through'
-                                    : 'text-[var(--foreground)]'
-                                }`}
+                      {/* Custom items */}
+                      {customCategoryItems.length > 0 && (
+                        <>
+                          <div className="px-5 pt-3 pb-1">
+                            <span className="text-xs font-semibold text-[var(--system-purple)]">Eigene Einträge</span>
+                          </div>
+                          <ul>
+                            {customCategoryItems.map((item, index) => (
+                              <motion.li
+                                key={item.id}
+                                variants={listItemVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                transition={{ delay: index * 0.02 }}
                               >
-                                {item.name}
-                              </span>
-                              <span className="text-sm text-[var(--foreground-tertiary)]">
-                                {item.amount || '-'}
-                              </span>
-                              <button
-                                onClick={() => removeCustomShoppingItem(item.id)}
-                                className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--system-red)] transition-none active:opacity-80"
-                                aria-label={`${item.name} löschen`}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
-              )}
+                                <div className="flex min-h-[48px] items-center gap-3 px-5 py-2.5">
+                                  <motion.div whileTap={{ scale: 0.9 }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={item.isChecked}
+                                      onChange={() => toggleCustomShoppingItem(item.id)}
+                                      className="flex-shrink-0"
+                                    />
+                                  </motion.div>
+                                  <span
+                                    className={`flex-1 text-[15px] ${
+                                      item.isChecked
+                                        ? 'text-[var(--foreground-tertiary)] line-through'
+                                        : 'text-[var(--foreground)]'
+                                    }`}
+                                  >
+                                    {item.name}
+                                  </span>
+                                  <span className="text-sm text-[var(--foreground-tertiary)]">
+                                    {item.amount || '-'}
+                                  </span>
+                                  <motion.button
+                                    onClick={() => removeCustomShoppingItem(item.id)}
+                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--system-red)] bg-[var(--system-red)]/10"
+                                    aria-label={`${item.name} löschen`}
+                                    whileTap={{ scale: 0.9 }}
+                                    whileHover={{ scale: 1.1 }}
+                                  >
+                                    <Trash2 size={14} />
+                                  </motion.button>
+                                </div>
+                              </motion.li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           );
         })}
       </div>
 
       {/* Custom Item Form Modal */}
-      {showCustomForm && (
-        <CustomItemForm
-          onSubmit={handleAddCustomItem}
-          onClose={() => setShowCustomForm(false)}
-        />
-      )}
-    </section>
+      <AnimatePresence>
+        {showCustomForm && (
+          <CustomItemForm
+            onSubmit={handleAddCustomItem}
+            onClose={() => setShowCustomForm(false)}
+          />
+        )}
+      </AnimatePresence>
+    </motion.section>
   );
 }

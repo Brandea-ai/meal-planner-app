@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Clock, AlertCircle } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { breakfastMeals, dinnerMeals, mealTypeLabels } from '@/data/meals';
@@ -27,6 +28,45 @@ const PREP_TIME_LIMITS = {
   quick: 12,
   normal: 25,
   extended: Infinity,
+};
+
+// Page transition variants
+const pageVariants = {
+  initial: { opacity: 0, y: 20, scale: 0.98 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 30,
+      mass: 0.8,
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    scale: 0.98,
+    transition: {
+      duration: 0.15,
+      ease: 'easeOut' as const,
+    },
+  },
+};
+
+// Header variants
+const headerVariants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 25,
+    },
+  },
 };
 
 export function MealPlanApp() {
@@ -123,7 +163,11 @@ export function MealPlanApp() {
   if (!isLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--system-blue)] border-t-transparent" />
+        <motion.div
+          className="h-10 w-10 rounded-full border-4 border-[var(--system-blue)] border-t-transparent"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        />
       </div>
     );
   }
@@ -132,50 +176,73 @@ export function MealPlanApp() {
   const isChatFullscreen = activeTab === 'chat';
 
   return (
-    <div className={`min-h-screen bg-[var(--background)] ${isChatFullscreen ? '' : 'pb-24'}`}>
+    <div className={`min-h-screen bg-[var(--background)] ${isChatFullscreen ? '' : 'pb-28'}`}>
       {/* Header - hidden in chat mode */}
-      {!isChatFullscreen && (
-        <header className="sticky top-0 z-40 border-b border-[var(--separator)] bg-[var(--background)]/80 backdrop-blur-xl">
-          <div className="mx-auto max-w-lg px-4 py-3">
-            <h1 className="text-center text-lg font-semibold text-[var(--foreground)]">
-              7-Tage Mahlzeitenplan
-            </h1>
-            <p className="text-center text-xs text-[var(--foreground-tertiary)]">
-              Albanisch · Deutsch · Französisch
-            </p>
+      <AnimatePresence>
+        {!isChatFullscreen && (
+          <motion.header
+            className="glass-header sticky top-0 z-40"
+            variants={headerVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <div className="mx-auto max-w-lg px-4 py-3">
+              <h1 className="text-center text-lg font-semibold text-[var(--foreground)]">
+                7-Tage Mahlzeitenplan
+              </h1>
+              <p className="text-center text-xs text-[var(--foreground-tertiary)]">
+                Albanisch · Deutsch · Französisch
+              </p>
 
-            {/* Meal Type Toggle - Segmented Control */}
-            {activeTab === 'plan' && (
-              <div className="mt-3">
-                <div className="flex rounded-[10px] bg-[var(--fill-tertiary)] p-0.5">
-                  <button
-                    onClick={() => setMealType('breakfast')}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-4 py-2 text-sm font-medium transition-none active:opacity-80 ${
-                      mealType === 'breakfast'
-                        ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                        : 'text-[var(--foreground-secondary)]'
-                    }`}
+              {/* Meal Type Toggle - Segmented Control */}
+              <AnimatePresence mode="wait">
+                {activeTab === 'plan' && (
+                  <motion.div
+                    className="mt-3"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <Sun size={16} />
-                    {mealTypeLabels.breakfast}
-                  </button>
-                  <button
-                    onClick={() => setMealType('dinner')}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-4 py-2 text-sm font-medium transition-none active:opacity-80 ${
-                      mealType === 'dinner'
-                        ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                        : 'text-[var(--foreground-secondary)]'
-                    }`}
-                  >
-                    <Moon size={16} />
-                    {mealTypeLabels.dinner}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </header>
-      )}
+                    <div className="relative flex rounded-[12px] bg-[var(--fill-tertiary)] p-1">
+                      {/* Sliding indicator */}
+                      <motion.div
+                        className="absolute inset-y-1 rounded-[10px] bg-[var(--background)] shadow-sm"
+                        style={{ width: 'calc(50% - 4px)' }}
+                        animate={{ x: mealType === 'breakfast' ? 4 : 'calc(100% + 4px)' }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                      />
+                      <button
+                        onClick={() => setMealType('breakfast')}
+                        className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-[10px] px-4 py-2.5 text-sm font-medium transition-colors ${
+                          mealType === 'breakfast'
+                            ? 'text-[var(--foreground)]'
+                            : 'text-[var(--foreground-secondary)]'
+                        }`}
+                      >
+                        <Sun size={16} />
+                        {mealTypeLabels.breakfast}
+                      </button>
+                      <button
+                        onClick={() => setMealType('dinner')}
+                        className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-[10px] px-4 py-2.5 text-sm font-medium transition-colors ${
+                          mealType === 'dinner'
+                            ? 'text-[var(--foreground)]'
+                            : 'text-[var(--foreground-secondary)]'
+                        }`}
+                      >
+                        <Moon size={16} />
+                        {mealTypeLabels.dinner}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.header>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       {isChatFullscreen ? (
@@ -187,45 +254,101 @@ export function MealPlanApp() {
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          {activeTab === 'plan' && (
-            <div className="space-y-4">
-              <DaySelector selectedDay={displayDay} onDaySelect={setSelectedDay} />
+          <AnimatePresence mode="wait">
+            {activeTab === 'plan' && (
+              <motion.div
+                key="plan"
+                className="space-y-4"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <DaySelector selectedDay={displayDay} onDaySelect={setSelectedDay} />
 
-              {/* Time Warning - shown when meal exceeds user's preference */}
-              {mealExceedsTimeLimit && selectedMeal && (
-                <div className="flex items-start gap-3 rounded-[12px] bg-[var(--system-orange)]/10 p-3">
-                  <AlertCircle size={18} className="mt-0.5 flex-shrink-0 text-[var(--system-orange)]" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[var(--foreground)]">
-                      Dieses Gericht dauert {selectedMeal.prepTime} Min
-                    </p>
-                    <p className="mt-0.5 text-xs text-[var(--foreground-secondary)]">
-                      Deine Einstellung: {timePreference === 'quick' ? 'Schnell (≤12 Min)' : 'Normal (≤25 Min)'}
-                    </p>
-                    {fastestAlternative && (
-                      <button
-                        onClick={() => setSelectedDay(fastestAlternative.day)}
-                        className="mt-2 flex items-center gap-1.5 text-sm font-medium text-[var(--system-blue)] transition-none active:opacity-80"
+                {/* Time Warning - shown when meal exceeds user's preference */}
+                <AnimatePresence>
+                  {mealExceedsTimeLimit && selectedMeal && (
+                    <motion.div
+                      className="glass-card overflow-hidden"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    >
+                      <div
+                        className="flex items-start gap-3 p-4"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(255, 159, 10, 0.1), rgba(255, 159, 10, 0.05))',
+                        }}
                       >
-                        <Clock size={14} />
-                        Schnellere Alternative: Tag {fastestAlternative.day} ({fastestAlternative.prepTime} Min)
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+                        <AlertCircle size={18} className="mt-0.5 flex-shrink-0 text-[var(--system-orange)]" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-[var(--foreground)]">
+                            Dieses Gericht dauert {selectedMeal.prepTime} Min
+                          </p>
+                          <p className="mt-0.5 text-xs text-[var(--foreground-secondary)]">
+                            Deine Einstellung: {timePreference === 'quick' ? 'Schnell (≤12 Min)' : 'Normal (≤25 Min)'}
+                          </p>
+                          {fastestAlternative && (
+                            <motion.button
+                              onClick={() => setSelectedDay(fastestAlternative.day)}
+                              className="mt-2 flex items-center gap-1.5 text-sm font-medium text-[var(--system-blue)]"
+                              whileHover={{ x: 4 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Clock size={14} />
+                              Schnellere Alternative: Tag {fastestAlternative.day} ({fastestAlternative.prepTime} Min)
+                            </motion.button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-              {selectedMeal && (
-                <MealCard meal={selectedMeal} />
-              )}
-            </div>
-          )}
+                {selectedMeal && (
+                  <MealCard meal={selectedMeal} />
+                )}
+              </motion.div>
+            )}
 
-          {activeTab === 'shopping' && <ShoppingList />}
+            {activeTab === 'shopping' && (
+              <motion.div
+                key="shopping"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <ShoppingList />
+              </motion.div>
+            )}
 
-          {activeTab === 'statistics' && <Statistics />}
+            {activeTab === 'statistics' && (
+              <motion.div
+                key="statistics"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <Statistics />
+              </motion.div>
+            )}
 
-          {activeTab === 'settings' && <Settings />}
+            {activeTab === 'settings' && (
+              <motion.div
+                key="settings"
+                variants={pageVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <Settings />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
       )}
 
