@@ -458,8 +458,101 @@ export const dinnerShoppingList: ShoppingItem[] = [
   { name: "Sesam", amount: "optional", category: "extras", checked: false, mealType: "dinner" },
 ];
 
-// Kombinierte Einkaufsliste
-export const shoppingList: ShoppingItem[] = [...breakfastShoppingList, ...dinnerShoppingList];
+// ============================================
+// VEREINHEITLICHTE EINKAUFSLISTE
+// Alle Zutaten für 7 Tage Frühstück + Abendessen kombiniert
+// ============================================
+
+export const unifiedShoppingList: ShoppingItem[] = [
+  // === FRISCHES GEMÜSE & OBST ===
+  // Hauptzutaten
+  { name: "Avocados", amount: "3-4 Stück", category: "fresh", checked: false },
+  { name: "Paprika (gemischt)", amount: "8-10 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Zucchini", amount: "5-6 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Aubergine", amount: "1-2 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Spinat", amount: "1-2 Packungen", category: "fresh", checked: false },
+  { name: "Brokkoli", amount: "1 Stück", category: "fresh", checked: false },
+  { name: "Karotten", amount: "6-8 Stück", category: "fresh", checked: false },
+  { name: "Zwiebeln", amount: "7-9 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Knoblauch", amount: "1-2 Knollen", category: "fresh", checked: false },
+  { name: "Rucola", amount: "1-2 Packungen", category: "fresh", checked: false },
+  { name: "Ingwer", amount: "1 Stück", category: "fresh", checked: false },
+  { name: "Beeren (frisch/TK)", amount: "200g", category: "fresh", checked: false },
+  { name: "Äpfel", amount: "2 Stück", category: "fresh", checked: false },
+  { name: "Zitronen", amount: "8-10 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
+  // Kräuter
+  { name: "Petersilie", amount: "3 Bund", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Dill", amount: "2 Bund", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Minze", amount: "1-2 Bund", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Thymian/Oregano (frisch)", amount: "1 Bund", category: "fresh", checked: false },
+  // Beilagen/Salat
+  { name: "Tomaten (groß)", amount: "10-12 Stück", category: "fresh", checked: false, forSideDish: true }, // Frühstück + Abendessen
+  { name: "Cherry-Tomaten", amount: "2 Packungen", category: "fresh", checked: false, forSideDish: true },
+  { name: "Gurken", amount: "4-5 Stück", category: "fresh", checked: false, forSideDish: true }, // Frühstück + Abendessen
+  { name: "Rotkohl oder Salat", amount: "1 Stück", category: "fresh", checked: false, forSideDish: true },
+  { name: "Kartoffeln", amount: "1 kg", category: "fresh", checked: false, forSideDish: true },
+
+  // === FLEISCH & FISCH ===
+  // Hauptzutaten
+  { name: "Eier", amount: "12-18 Stück", category: "protein", checked: false },
+  { name: "Hähnchenbrust", amount: "1.1-1.3 kg", category: "protein", checked: false },
+  { name: "Rinderhack", amount: "350-450g", category: "protein", checked: false },
+  { name: "Lachsfilets", amount: "2 Stück (300-400g)", category: "protein", checked: false },
+  { name: "Räucherlachs", amount: "100g", category: "protein", checked: false },
+  { name: "Tofu (optional)", amount: "300-400g", category: "protein", checked: false },
+  // Beilagen
+  { name: "Putenschinken", amount: "100g", category: "protein", checked: false, forSideDish: true },
+
+  // === MILCHPRODUKTE ===
+  // Hauptzutaten
+  { name: "Skyr/Magerquark", amount: "500g", category: "dairy", checked: false },
+  { name: "Feta/Sirene", amount: "350-400g", category: "dairy", checked: false }, // Frühstück + Abendessen
+  { name: "Frischkäse (leicht)", amount: "1 Packung", category: "dairy", checked: false },
+  // Beilagen/Dips
+  { name: "Joghurt (natur)", amount: "2-2.5 kg", category: "dairy", checked: false, forSideDish: true }, // Frühstück + Abendessen kombiniert
+
+  // === HÜLSENFRÜCHTE ===
+  { name: "Kichererbsen (Dosen)", amount: "3 Dosen", category: "legumes", checked: false },
+  { name: "Edamame (TK, optional)", amount: "1 Packung", category: "legumes", checked: false },
+
+  // === BEILAGEN & VOLLKORN ===
+  // Frühstück
+  { name: "Vollkorn-Toast", amount: "2 Packungen", category: "grains", checked: false },
+  { name: "Baguette", amount: "1 Stück", category: "grains", checked: false },
+  { name: "Wraps/Tortillas", amount: "1 Packung", category: "grains", checked: false },
+  // Abendessen
+  { name: "Vollkorn-Bulgur", amount: "500g", category: "grains", checked: false, forSideDish: true },
+  { name: "Vollkornreis/Naturreis", amount: "500g", category: "grains", checked: false, forSideDish: true },
+  { name: "Vollkornpasta", amount: "500g", category: "grains", checked: false },
+  { name: "Vollkorn-Fladenbrot (optional)", amount: "1 Packung", category: "grains", checked: false, forSideDish: true },
+
+  // === BASICS & SAUCEN ===
+  { name: "Olivenöl", amount: "1 Flasche", category: "basics", checked: false },
+  { name: "Ajvar", amount: "1 Glas", category: "basics", checked: false },
+  { name: "Tomatensauce", amount: "1 Dose/Glas", category: "basics", checked: false },
+  { name: "Tahini", amount: "1 Glas", category: "basics", checked: false, forSideDish: true },
+  { name: "Sojasauce", amount: "1 Flasche", category: "basics", checked: false },
+  // Beilagen
+  { name: "Oliven", amount: "1 Glas", category: "basics", checked: false, forSideDish: true },
+  { name: "Dijon-Senf", amount: "1 Glas", category: "basics", checked: false, forSideDish: true },
+
+  // === GEWÜRZE & EXTRAS ===
+  { name: "Walnüsse", amount: "100g", category: "extras", checked: false },
+  { name: "Honig", amount: "1 Glas", category: "extras", checked: false },
+  { name: "Pfeffer (Mühle)", amount: "1 Stück", category: "extras", checked: false },
+  { name: "Zimt", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Kreuzkümmel", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Paprika edelsüß", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Kurkuma", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Thymian (getrocknet)", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Oregano (getrocknet)", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Kräuter der Provence", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Chili (optional)", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Sesam (optional)", amount: "1 Packung", category: "extras", checked: false },
+];
+
+// Legacy exports für Kompatibilität (nicht mehr für Filter verwendet)
+export const shoppingList: ShoppingItem[] = unifiedShoppingList;
 
 // ============================================
 // KATEGORIEN & LABELS

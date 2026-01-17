@@ -16,7 +16,6 @@ import {
   Fish,
   Beef,
   Scale,
-  RefreshCw,
   CheckCircle2,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
@@ -228,28 +227,6 @@ export function Settings() {
           </select>
         </div>
 
-        <div className="inset-separator" />
-
-        {/* Auto-Sync Shopping Filter Toggle */}
-        <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <RefreshCw size={20} className="text-[var(--system-teal)]" />
-            <span className="text-[var(--foreground)]">Auto-Sync</span>
-            <InfoPopup title="Auto-Sync Filter" iconColor="var(--system-teal)">
-              <p>
-                Wenn aktiviert, wechselt die Einkaufsliste automatisch zwischen Frühstück und Abendessen, je nachdem welchen Tab du im Wochenplan ausgewählt hast.
-              </p>
-            </InfoPopup>
-          </div>
-          <button
-            onClick={() => updatePreferences({ autoSyncShoppingFilter: !progress.preferences.autoSyncShoppingFilter })}
-            className={`toggle-switch ${progress.preferences.autoSyncShoppingFilter ? 'active' : ''}`}
-            role="switch"
-            aria-checked={progress.preferences.autoSyncShoppingFilter || false}
-          >
-            <span className="toggle-switch-knob" />
-          </button>
-        </div>
       </section>
 
       {/* Principles Section */}

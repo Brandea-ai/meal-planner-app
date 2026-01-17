@@ -3,12 +3,10 @@
 import { useState, useMemo } from 'react';
 import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { breakfastShoppingList, dinnerShoppingList, categoryLabels, mealTypeLabels } from '@/data/meals';
-import { MealType, LocalCustomShoppingItem } from '@/types';
+import { unifiedShoppingList, categoryLabels } from '@/data/meals';
+import { LocalCustomShoppingItem } from '@/types';
 import { scaleAmount, getServingsLabel } from '@/utils/portionScaling';
 import { CustomItemForm } from './CustomItemForm';
-
-type ShoppingFilter = MealType | 'all';
 
 const categoryIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   fresh: Leaf,
@@ -24,47 +22,23 @@ const categoryOrder = ['fresh', 'protein', 'dairy', 'legumes', 'grains', 'basics
 
 export function ShoppingList() {
   const { progress, toggleShoppingItem, addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem } = useApp();
-  const [filter, setFilter] = useState<ShoppingFilter>('all');
   const [expandedCategories, setExpandedCategories] = useState<string[]>(categoryOrder);
   const [showCustomForm, setShowCustomForm] = useState(false);
 
   const servings = progress.preferences.servings;
   const customItems = progress.customShoppingItems || [];
 
-  // Get filtered custom items
-  const filteredCustomItems = useMemo(() => {
-    if (filter === 'all') return customItems;
-    return customItems.filter((item) => item.mealType === filter || item.mealType === 'both');
-  }, [customItems, filter]);
-
-  // Get filtered shopping list
-  const shoppingList = useMemo(() => {
-    if (filter === 'breakfast') {
-      return breakfastShoppingList;
-    }
-    if (filter === 'dinner') {
-      return dinnerShoppingList;
-    }
-    // For 'all', combine both lists (items with mealType 'both' are already in breakfast list)
-    const combined = [...breakfastShoppingList];
-    dinnerShoppingList.forEach((item) => {
-      // Check if item already exists (by name)
-      const exists = combined.some((existing) => existing.name === item.name);
-      if (!exists) {
-        combined.push(item);
-      }
-    });
-    return combined;
-  }, [filter]);
+  // Use unified shopping list (all items for breakfast + dinner combined)
+  const shoppingList = unifiedShoppingList;
 
   // Get available categories based on current shopping list + custom items
   const availableCategories = useMemo(() => {
     const cats = new Set([
       ...shoppingList.map((item) => item.category),
-      ...filteredCustomItems.map((item) => item.category),
+      ...customItems.map((item) => item.category),
     ]);
     return categoryOrder.filter((cat) => cats.has(cat as typeof shoppingList[number]['category']));
-  }, [shoppingList, filteredCustomItems]);
+  }, [shoppingList, customItems]);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories((prev) =>
@@ -86,7 +60,7 @@ export function ShoppingList() {
 
   // Get custom items for a category
   const getCategoryCustomItems = (category: string) =>
-    filteredCustomItems.filter((item) => item.category === category);
+    customItems.filter((item) => item.category === category);
 
   const getCategoryProgress = (category: string) => {
     const standardItems = getCategoryItems(category);
@@ -105,12 +79,12 @@ export function ShoppingList() {
     const standardChecked = shoppingList.filter((item) =>
       progress.shoppingListChecked.includes(item.name)
     ).length;
-    const customChecked = filteredCustomItems.filter((item) => item.isChecked).length;
+    const customChecked = customItems.filter((item) => item.isChecked).length;
     return {
       checked: standardChecked + customChecked,
-      total: shoppingList.length + filteredCustomItems.length,
+      total: shoppingList.length + customItems.length,
     };
-  }, [shoppingList, progress.shoppingListChecked, filteredCustomItems]);
+  }, [shoppingList, progress.shoppingListChecked, customItems]);
 
   const handleAddCustomItem = (item: { name: string; amount: string; category: LocalCustomShoppingItem['category']; mealType: 'breakfast' | 'dinner' | 'both' }) => {
     addCustomShoppingItem(item);
@@ -130,43 +104,11 @@ export function ShoppingList() {
           </span>
         </div>
 
-        {/* Filter Toggle - Segmented Control */}
-        <div className="mt-4">
-          <div className="flex rounded-[10px] bg-[var(--fill-tertiary)] p-0.5">
-            <button
-              onClick={() => setFilter('all')}
-              className={`flex-1 rounded-[8px] px-3 py-2 text-sm font-medium transition-none active:opacity-80 ${
-                filter === 'all'
-                  ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                  : 'text-[var(--foreground-secondary)]'
-              }`}
-            >
-              Alles
-            </button>
-            <button
-              onClick={() => setFilter('breakfast')}
-              className={`flex-1 rounded-[8px] px-3 py-2 text-sm font-medium transition-none active:opacity-80 ${
-                filter === 'breakfast'
-                  ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                  : 'text-[var(--foreground-secondary)]'
-              }`}
-            >
-              {mealTypeLabels.breakfast}
-            </button>
-            <button
-              onClick={() => setFilter('dinner')}
-              className={`flex-1 rounded-[8px] px-3 py-2 text-sm font-medium transition-none active:opacity-80 ${
-                filter === 'dinner'
-                  ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                  : 'text-[var(--foreground-secondary)]'
-              }`}
-            >
-              {mealTypeLabels.dinner}
-            </button>
-          </div>
-        </div>
+        <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
+          Alle Zutaten für Frühstück + Abendessen
+        </p>
 
-        <p className="mt-3 text-center text-sm text-[var(--foreground-tertiary)]">
+        <p className="mt-1 text-center text-sm text-[var(--foreground-tertiary)]">
           {getServingsLabel(servings)} · 7 Tage
         </p>
 
