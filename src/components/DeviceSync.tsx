@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Smartphone, Camera, ArrowLeft } from 'lucide-react';
+import { X, Smartphone, Camera, ArrowLeft, Info, CheckCircle2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { getDeviceId } from '@/lib/supabase';
@@ -12,7 +12,7 @@ interface DeviceSyncProps {
 }
 
 export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
-  const [mode, setMode] = useState<'choose' | 'show' | 'scan'>('choose');
+  const [mode, setMode] = useState<'choose' | 'show' | 'scan' | 'info'>('choose');
   const [deviceId] = useState(() => getDeviceId());
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -103,12 +103,19 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
               <ArrowLeft size={20} className="text-[var(--foreground)]" />
             </button>
           ) : (
-            <div className="w-10" />
+            <button
+              onClick={() => setMode('info')}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fill-tertiary)] transition-none active:opacity-80"
+              aria-label="Info"
+            >
+              <Info size={20} className="text-[var(--system-blue)]" />
+            </button>
           )}
           <h2 className="text-lg font-semibold text-[var(--foreground)]">
             {mode === 'choose' && 'Geräte verbinden'}
             {mode === 'show' && 'QR-Code zeigen'}
             {mode === 'scan' && 'QR-Code scannen'}
+            {mode === 'info' && 'So funktioniert\'s'}
           </h2>
           <button
             onClick={onClose}
@@ -195,6 +202,50 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
                 Halte die Kamera auf den QR-Code des anderen Geräts
               </p>
             )}
+          </div>
+        )}
+
+        {/* Info Section */}
+        {mode === 'info' && (
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 rounded-[10px] bg-[var(--fill-tertiary)] p-3">
+                <CheckCircle2 size={20} className="mt-0.5 flex-shrink-0 text-[var(--system-green)]" />
+                <div>
+                  <p className="font-medium text-[var(--foreground)]">Was wird synchronisiert?</p>
+                  <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
+                    Dein Fortschritt, Einstellungen, Einkaufsliste, Notizen und eigene Artikel werden auf allen verbundenen Geräten verfügbar.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-[10px] bg-[var(--fill-tertiary)] p-3">
+                <Smartphone size={20} className="mt-0.5 flex-shrink-0 text-[var(--system-blue)]" />
+                <div>
+                  <p className="font-medium text-[var(--foreground)]">Wie funktioniert es?</p>
+                  <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
+                    Zeige den QR-Code auf diesem Gerät und scanne ihn mit deinem anderen Gerät. Beide Geräte teilen dann dieselben Daten.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-[10px] bg-[var(--fill-tertiary)] p-3">
+                <Info size={20} className="mt-0.5 flex-shrink-0 text-[var(--system-orange)]" />
+                <div>
+                  <p className="font-medium text-[var(--foreground)]">Wichtig zu wissen</p>
+                  <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
+                    Nach dem Scannen werden die Daten des gescannten Geräts übernommen. Änderungen werden automatisch auf allen Geräten synchronisiert.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setMode('choose')}
+              className="w-full rounded-[12px] bg-[var(--system-blue)] py-3.5 font-semibold text-white transition-none active:opacity-80"
+            >
+              Verstanden
+            </button>
           </div>
         )}
       </div>

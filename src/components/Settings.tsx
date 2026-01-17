@@ -8,7 +8,6 @@ import {
   RotateCcw,
   Users,
   Timer,
-  ChefHat,
   Dumbbell,
   Leaf,
   Wheat,
@@ -18,6 +17,7 @@ import {
   Beef,
   Scale,
   RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { ProgressRing } from './ProgressRing';
@@ -48,10 +48,6 @@ export function Settings() {
     updatePreferences({ prepTimePreference: e.target.value as 'quick' | 'normal' | 'extended' });
   };
 
-  const handleMealPrepToggle = () => {
-    updatePreferences({ mealPrepEnabled: !progress.preferences.mealPrepEnabled });
-  };
-
   const handleReset = () => {
     if (window.confirm('Möchtest du deinen gesamten Fortschritt wirklich zurücksetzen?')) {
       resetProgress();
@@ -69,8 +65,14 @@ export function Settings() {
     <div className="space-y-4">
       {/* Success Message */}
       {syncSuccess && (
-        <div className="rounded-[12px] bg-[var(--system-green)]/15 p-4 text-center text-[var(--system-green)]">
-          Geräte erfolgreich verbunden!
+        <div className="flex items-center gap-3 rounded-[12px] bg-[var(--system-green)]/15 p-4">
+          <CheckCircle2 size={24} className="flex-shrink-0 text-[var(--system-green)]" />
+          <div>
+            <p className="font-semibold text-[var(--system-green)]">Geräte erfolgreich verbunden!</p>
+            <p className="mt-0.5 text-sm text-[var(--system-green)]/80">
+              Deine Daten werden jetzt synchronisiert.
+            </p>
+          </div>
         </div>
       )}
 
@@ -208,29 +210,6 @@ export function Settings() {
             <option value="normal">≤25 Min</option>
             <option value="extended">Unbegrenzt</option>
           </select>
-        </div>
-
-        <div className="inset-separator" />
-
-        {/* Meal Prep Toggle */}
-        <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <ChefHat size={20} className="text-[var(--system-purple)]" />
-            <div>
-              <span className="block text-[var(--foreground)]">Meal Prep</span>
-              <span className="text-xs text-[var(--foreground-tertiary)]">
-                Vorbereitung am Wochenende
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={handleMealPrepToggle}
-            className={`toggle-switch ${progress.preferences.mealPrepEnabled ? 'active' : ''}`}
-            role="switch"
-            aria-checked={progress.preferences.mealPrepEnabled}
-          >
-            <span className="toggle-switch-knob" />
-          </button>
         </div>
 
         <div className="inset-separator" />

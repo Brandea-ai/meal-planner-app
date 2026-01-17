@@ -2,6 +2,7 @@ export interface Ingredient {
   name: string;
   amount?: string;
   category: 'fresh' | 'protein' | 'dairy' | 'legumes' | 'grains' | 'basics' | 'extras';
+  forSideDish?: boolean; // True if this ingredient is specifically for the side dish
 }
 
 export type MealType = 'breakfast' | 'dinner';
@@ -38,6 +39,16 @@ export interface StoredMealNote {
   updatedAt: string;
 }
 
+// Simple local custom shopping item (no cloud sync needed)
+export interface LocalCustomShoppingItem {
+  id: string;
+  name: string;
+  amount: string;
+  category: 'fresh' | 'protein' | 'dairy' | 'legumes' | 'grains' | 'basics' | 'extras';
+  mealType: MealType | 'both';
+  isChecked: boolean;
+}
+
 export interface UserProgress {
   completedDays: number[];
   currentDay: number;
@@ -48,6 +59,8 @@ export interface UserProgress {
   ingredientCustomizations: IngredientCustomization[];
   // New: meal notes
   mealNotes: StoredMealNote[];
+  // New: custom shopping items
+  customShoppingItems: LocalCustomShoppingItem[];
 }
 
 export interface UserPreferences {

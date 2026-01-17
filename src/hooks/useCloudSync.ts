@@ -21,6 +21,7 @@ const defaultProgress: UserProgress = {
   shoppingListChecked: [],
   ingredientCustomizations: [],
   mealNotes: [],
+  customShoppingItems: [],
 };
 
 interface CloudSyncReturn {
@@ -70,6 +71,7 @@ export function useCloudSync(): CloudSyncReturn {
           shoppingListChecked: data.shopping_list_checked || [],
           ingredientCustomizations: data.ingredient_customizations || [],
           mealNotes: data.meal_notes || [],
+          customShoppingItems: data.custom_shopping_items || [],
         };
         setProgressState(cloudProgress);
         localStorage.setItem('meal-planner-progress', JSON.stringify(cloudProgress));
@@ -94,6 +96,7 @@ export function useCloudSync(): CloudSyncReturn {
             ...parsed,
             ingredientCustomizations: parsed.ingredientCustomizations || [],
             mealNotes: parsed.mealNotes || [],
+            customShoppingItems: parsed.customShoppingItems || [],
           });
         }
       } catch (le) {
@@ -136,6 +139,7 @@ export function useCloudSync(): CloudSyncReturn {
           preferences: newProgress.preferences,
           ingredient_customizations: newProgress.ingredientCustomizations,
           meal_notes: newProgress.mealNotes,
+          custom_shopping_items: newProgress.customShoppingItems,
         }, {
           onConflict: 'device_id',
         });

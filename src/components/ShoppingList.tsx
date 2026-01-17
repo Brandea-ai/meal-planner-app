@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus } from 'lucide-react';
+import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { breakfastShoppingList, dinnerShoppingList, categoryLabels, mealTypeLabels } from '@/data/meals';
-import { MealType } from '@/types';
+import { MealType, LocalCustomShoppingItem } from '@/types';
 import { scaleAmount, getServingsLabel } from '@/utils/portionScaling';
+import { CustomItemForm } from './CustomItemForm';
 
 type ShoppingFilter = MealType | 'all';
 
@@ -22,11 +23,19 @@ const categoryIcons: Record<string, React.ComponentType<{ size?: number; classNa
 const categoryOrder = ['fresh', 'protein', 'dairy', 'legumes', 'grains', 'basics', 'extras'];
 
 export function ShoppingList() {
-  const { progress, toggleShoppingItem } = useApp();
+  const { progress, toggleShoppingItem, addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem } = useApp();
   const [filter, setFilter] = useState<ShoppingFilter>('all');
   const [expandedCategories, setExpandedCategories] = useState<string[]>(categoryOrder);
+  const [showCustomForm, setShowCustomForm] = useState(false);
 
   const servings = progress.preferences.servings;
+  const customItems = progress.customShoppingItems || [];
+
+  // Get filtered custom items
+  const filteredCustomItems = useMemo(() => {
+    if (filter === 'all') return customItems;
+    return customItems.filter((item) => item.mealType === filter || item.mealType === 'both');
+  }, [customItems, filter]);
 
   // Get filtered shopping list
   const shoppingList = useMemo(() => {
@@ -48,11 +57,14 @@ export function ShoppingList() {
     return combined;
   }, [filter]);
 
-  // Get available categories based on current shopping list
+  // Get available categories based on current shopping list + custom items
   const availableCategories = useMemo(() => {
-    const cats = new Set(shoppingList.map((item) => item.category));
+    const cats = new Set([
+      ...shoppingList.map((item) => item.category),
+      ...filteredCustomItems.map((item) => item.category),
+    ]);
     return categoryOrder.filter((cat) => cats.has(cat as typeof shoppingList[number]['category']));
-  }, [shoppingList]);
+  }, [shoppingList, filteredCustomItems]);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories((prev) =>
@@ -62,23 +74,42 @@ export function ShoppingList() {
     );
   };
 
+  // Get standard items for a category
   const getCategoryItems = (category: string) =>
     shoppingList.filter((item) => item.category === category);
 
+  // Get custom items for a category
+  const getCategoryCustomItems = (category: string) =>
+    filteredCustomItems.filter((item) => item.category === category);
+
   const getCategoryProgress = (category: string) => {
-    const items = getCategoryItems(category);
-    const checked = items.filter((item) =>
+    const standardItems = getCategoryItems(category);
+    const customCategoryItems = getCategoryCustomItems(category);
+    const standardChecked = standardItems.filter((item) =>
       progress.shoppingListChecked.includes(item.name)
     ).length;
-    return { checked, total: items.length };
+    const customChecked = customCategoryItems.filter((item) => item.isChecked).length;
+    return {
+      checked: standardChecked + customChecked,
+      total: standardItems.length + customCategoryItems.length
+    };
   };
 
-  const totalProgress = useMemo(() => ({
-    checked: shoppingList.filter((item) =>
+  const totalProgress = useMemo(() => {
+    const standardChecked = shoppingList.filter((item) =>
       progress.shoppingListChecked.includes(item.name)
-    ).length,
-    total: shoppingList.length,
-  }), [shoppingList, progress.shoppingListChecked]);
+    ).length;
+    const customChecked = filteredCustomItems.filter((item) => item.isChecked).length;
+    return {
+      checked: standardChecked + customChecked,
+      total: shoppingList.length + filteredCustomItems.length,
+    };
+  }, [shoppingList, progress.shoppingListChecked, filteredCustomItems]);
+
+  const handleAddCustomItem = (item: { name: string; amount: string; category: LocalCustomShoppingItem['category']; mealType: 'breakfast' | 'dinner' | 'both' }) => {
+    addCustomShoppingItem(item);
+    setShowCustomForm(false);
+  };
 
   return (
     <section className="overflow-hidden rounded-[12px] bg-[var(--background-secondary)]">
@@ -150,6 +181,7 @@ export function ShoppingList() {
       {/* Add Custom Item Button */}
       <div className="border-t border-[var(--separator)] px-4 py-3">
         <button
+          onClick={() => setShowCustomForm(true)}
           className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--fill-tertiary)] py-3 text-sm font-medium text-[var(--system-blue)] transition-none active:opacity-80"
         >
           <Plus size={18} />
@@ -161,6 +193,7 @@ export function ShoppingList() {
       <div>
         {availableCategories.map((category, index) => {
           const items = getCategoryItems(category);
+          const customCategoryItems = getCategoryCustomItems(category);
           const { checked, total } = getCategoryProgress(category);
           const isExpanded = expandedCategories.includes(category);
           const IconComponent = categoryIcons[category] || Sparkles;
@@ -200,6 +233,7 @@ export function ShoppingList() {
                   id={`category-${category}`}
                   className="bg-[var(--background)] pb-2"
                 >
+                  {/* Standard items */}
                   {items.map((item) => {
                     const isChecked = progress.shoppingListChecked.includes(item.name);
                     const scaledAmount = scaleAmount(item.amount, servings, item.category);
@@ -229,12 +263,54 @@ export function ShoppingList() {
                       </li>
                     );
                   })}
+
+                  {/* Custom items */}
+                  {customCategoryItems.map((item) => (
+                    <li key={item.id}>
+                      <div className="flex min-h-[44px] items-center gap-3 px-4 py-2">
+                        <input
+                          type="checkbox"
+                          checked={item.isChecked}
+                          onChange={() => toggleCustomShoppingItem(item.id)}
+                          className="flex-shrink-0"
+                        />
+                        <span
+                          className={`flex-1 text-[15px] ${
+                            item.isChecked
+                              ? 'text-[var(--foreground-tertiary)] line-through'
+                              : 'text-[var(--foreground)]'
+                          }`}
+                        >
+                          {item.name}
+                          <span className="ml-1 text-xs text-[var(--system-blue)]">(eigener)</span>
+                        </span>
+                        <span className="text-sm text-[var(--foreground-tertiary)]">
+                          {item.amount || '-'}
+                        </span>
+                        <button
+                          onClick={() => removeCustomShoppingItem(item.id)}
+                          className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--system-red)] transition-none active:opacity-80"
+                          aria-label={`${item.name} löschen`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </li>
+                  ))}
                 </ul>
               )}
             </div>
           );
         })}
       </div>
+
+      {/* Custom Item Form Modal */}
+      {showCustomForm && (
+        <CustomItemForm
+          onSubmit={handleAddCustomItem}
+          onClose={() => setShowCustomForm(false)}
+        />
+      )}
     </section>
   );
 }

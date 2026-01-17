@@ -88,13 +88,20 @@ export function DaySelector({ onDaySelect, selectedDay }: DaySelectorProps) {
 
       {/* Progress indicator */}
       <div className="mt-3 flex items-center justify-center gap-2">
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--fill-secondary)]">
+        <div
+          className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--fill-secondary)]"
+          role="progressbar"
+          aria-valuenow={progress.completedDays.length}
+          aria-valuemin={0}
+          aria-valuemax={7}
+          aria-label={`${progress.completedDays.length} von 7 Tagen abgeschlossen`}
+        >
           <div
             className="h-full bg-[var(--system-green)] transition-all duration-500 ease-out"
             style={{ width: `${(progress.completedDays.length / 7) * 100}%` }}
           />
         </div>
-        <span className="text-xs font-medium text-[var(--foreground-tertiary)]">
+        <span className="text-xs font-medium text-[var(--foreground-tertiary)]" aria-hidden="true">
           {progress.completedDays.length}/7
         </span>
       </div>

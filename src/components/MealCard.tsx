@@ -130,7 +130,7 @@ export function MealCard({ meal }: MealCardProps) {
         </div>
       </header>
 
-      {/* Ingredients */}
+      {/* Ingredients - Grouped by Main Dish and Side Dish */}
       <section className="px-4 pb-3" aria-labelledby={`ingredients-${meal.id}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -144,8 +144,12 @@ export function MealCard({ meal }: MealCardProps) {
           </span>
         </div>
 
-        <ul className="mt-2 space-y-1.5">
-          {meal.ingredients.map((ingredient) => {
+        {/* Main Dish Ingredients */}
+        {(() => {
+          const mainIngredients = meal.ingredients.filter((i) => !i.forSideDish);
+          const sideIngredients = meal.ingredients.filter((i) => i.forSideDish);
+
+          const renderIngredient = (ingredient: typeof meal.ingredients[0]) => {
             const isHidden = hiddenIngredients.includes(ingredient.name);
             const isEditing = editingIngredient === ingredient.name;
             const displayAmount = getDisplayAmount(ingredient.name, ingredient.amount, ingredient.category);
@@ -248,8 +252,36 @@ export function MealCard({ meal }: MealCardProps) {
                 </button>
               </li>
             );
-          })}
-        </ul>
+          };
+
+          return (
+            <>
+              {/* Main Dish Section */}
+              {mainIngredients.length > 0 && (
+                <div className="mt-2">
+                  <span className="text-xs font-medium text-[var(--system-blue)]">Hauptgericht</span>
+                  <ul className="mt-1.5 space-y-1.5">
+                    {mainIngredients.map(renderIngredient)}
+                  </ul>
+                </div>
+              )}
+
+              {/* Side Dish Section */}
+              {sideIngredients.length > 0 && (
+                <div className="mt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-[var(--system-teal)]">
+                      {meal.sideDish || 'Beilage'}
+                    </span>
+                  </div>
+                  <ul className="mt-1.5 space-y-1.5">
+                    {sideIngredients.map(renderIngredient)}
+                  </ul>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {hiddenIngredients.length > 0 && (
           <p className="mt-2 text-center text-xs text-[var(--foreground-tertiary)]">
@@ -268,17 +300,6 @@ export function MealCard({ meal }: MealCardProps) {
           <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
             {meal.proteinOptions.join(' / ')}
           </p>
-        </section>
-      )}
-
-      {/* Side Dish */}
-      {meal.sideDish && (
-        <section className="border-t border-[var(--separator)] px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Utensils size={14} className="text-[var(--system-teal)]" />
-            <span className="text-sm font-medium text-[var(--foreground)]">Beilage</span>
-          </div>
-          <p className="mt-1 text-sm text-[var(--foreground-secondary)]">{meal.sideDish}</p>
         </section>
       )}
 

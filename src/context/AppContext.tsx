@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import { useCloudSync } from '@/hooks/useCloudSync';
-import { UserProgress, UserPreferences, MealType, IngredientCustomization, StoredMealNote } from '@/types';
+import { UserProgress, UserPreferences, MealType, IngredientCustomization, StoredMealNote, LocalCustomShoppingItem } from '@/types';
 
 const defaultPreferences: UserPreferences = {
   prepTimePreference: 'normal',
@@ -37,6 +37,10 @@ interface AppContextType {
   saveMealNote: (mealId: number, mealType: MealType, note: string) => void;
   getMealNote: (mealId: number, mealType: MealType) => string;
   deleteMealNote: (mealId: number, mealType: MealType) => void;
+  // New: Custom shopping items
+  addCustomShoppingItem: (item: Omit<LocalCustomShoppingItem, 'id' | 'isChecked'>) => void;
+  removeCustomShoppingItem: (id: string) => void;
+  toggleCustomShoppingItem: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -93,6 +97,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       shoppingListChecked: [],
       ingredientCustomizations: [],
       mealNotes: [],
+      customShoppingItems: [],
     });
   }, [setProgress]);
 
@@ -233,6 +238,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [setProgress]);
 
+  // ============================================
+  // Custom Shopping Items Management
+  // ============================================
+
+  const addCustomShoppingItem = useCallback((item: Omit<LocalCustomShoppingItem, 'id' | 'isChecked'>) => {
+    setProgress((prev) => ({
+      ...prev,
+      customShoppingItems: [
+        ...prev.customShoppingItems,
+        {
+          ...item,
+          id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          isChecked: false,
+        },
+      ],
+    }));
+  }, [setProgress]);
+
+  const removeCustomShoppingItem = useCallback((id: string) => {
+    setProgress((prev) => ({
+      ...prev,
+      customShoppingItems: prev.customShoppingItems.filter((item) => item.id !== id),
+    }));
+  }, [setProgress]);
+
+  const toggleCustomShoppingItem = useCallback((id: string) => {
+    setProgress((prev) => ({
+      ...prev,
+      customShoppingItems: prev.customShoppingItems.map((item) =>
+        item.id === id ? { ...item, isChecked: !item.isChecked } : item
+      ),
+    }));
+  }, [setProgress]);
+
   const value = useMemo(() => ({
     progress,
     isLoaded,
@@ -255,11 +294,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveMealNote,
     getMealNote,
     deleteMealNote,
+    addCustomShoppingItem,
+    removeCustomShoppingItem,
+    toggleCustomShoppingItem,
   }), [
     progress, isLoaded, syncStatus, deviceId, completeDay, uncompleteDay, setCurrentDay,
     updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage,
     switchDevice, hideIngredient, showIngredient, updateIngredientAmount, resetIngredientAmount,
     getIngredientCustomization, saveMealNote, getMealNote, deleteMealNote,
+    addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem,
   ]);
 
   return (
