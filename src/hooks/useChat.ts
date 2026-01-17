@@ -39,27 +39,69 @@ export function useChat(): UseChatReturn {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [isPasswordSetup, setIsPasswordSetup] = useState(false);
   const [password, setPasswordState] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [hasEncryptedMessages, setHasEncryptedMessages] = useState(false);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const deviceIdRef = useRef<string>('');
   const passwordRef = useRef<string | null>(null);
+  const firstMessageRef = useRef<string | null>(null);
+
+  // Check if there are existing encrypted messages in the database
+  const checkForEncryptedMessages = useCallback(async (deviceId: string): Promise<boolean> => {
+    try {
+      const { data } = await supabase
+        .from('chat_messages')
+        .select('message')
+        .eq('device_id', deviceId)
+        .limit(1);
+
+      if (data && data.length > 0) {
+        const msg = data[0].message;
+        // Check if message looks like base64 encrypted data (not plain text)
+        // Encrypted messages are base64 and typically start with letters/numbers
+        // and don't contain normal sentence patterns
+        const isEncrypted = /^[A-Za-z0-9+/=]{20,}$/.test(msg);
+        if (isEncrypted) {
+          firstMessageRef.current = msg;
+        }
+        return isEncrypted;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
 
   // Check encryption status on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hasSetup = hasPasswordSetup();
-      setIsPasswordSetup(hasSetup);
+    const initEncryption = async () => {
+      if (typeof window === 'undefined') return;
 
+      const deviceId = getDeviceId();
+      deviceIdRef.current = deviceId;
+
+      const hasSetup = hasPasswordSetup();
       const storedPassword = getStoredPassword();
+
+      // Check if there are encrypted messages in database
+      const hasExisting = await checkForEncryptedMessages(deviceId);
+      setHasEncryptedMessages(hasExisting);
+
       if (storedPassword) {
         passwordRef.current = storedPassword;
         setPasswordState(storedPassword);
         setNeedsPassword(false);
-      } else if (hasSetup) {
+        setIsPasswordSetup(true);
+      } else if (hasSetup || hasExisting) {
+        // Need password if local setup exists OR if there are encrypted messages
         setNeedsPassword(true);
+        setIsPasswordSetup(hasExisting); // Treat as setup if encrypted messages exist
       }
-    }
-  }, []);
+    };
+
+    initEncryption();
+  }, [checkForEncryptedMessages]);
 
   // Load sender name from localStorage
   useEffect(() => {
@@ -286,9 +328,29 @@ export function useChat(): UseChatReturn {
     }
   }, [loadMessages, setupRealtimeSubscription]);
 
-  // Verify password
+  // Verify password by trying to decrypt an existing message
   const verifyPasswordFn = useCallback(async (pwd: string): Promise<boolean> => {
-    return verifyStoredPassword(pwd);
+    // First check local hash if available
+    const localValid = await verifyStoredPassword(pwd);
+    if (localValid) return true;
+
+    // If there are encrypted messages, try to decrypt one
+    if (firstMessageRef.current) {
+      try {
+        const decrypted = await decryptMessage(firstMessageRef.current, pwd);
+        // If decryption returns error message, password is wrong
+        if (decrypted.includes('[Entschlüsselung fehlgeschlagen')) {
+          return false;
+        }
+        // Decryption succeeded - password is correct
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    // No encrypted messages and no local hash - this is a new setup
+    return true;
   }, []);
 
   // Send a new message (encrypted)
