@@ -73,6 +73,10 @@ export function useChat(): UseChatReturn {
     }
   }, []);
 
+  // State to track initialization complete
+  const [initComplete, setInitComplete] = useState(false);
+  const [shouldLoadMessages, setShouldLoadMessages] = useState(false);
+
   // Check encryption status on mount
   useEffect(() => {
     const initEncryption = async () => {
@@ -81,27 +85,37 @@ export function useChat(): UseChatReturn {
       const deviceId = getDeviceId();
       deviceIdRef.current = deviceId;
 
-      const hasSetup = hasPasswordSetup();
+      const hasLocalSetup = hasPasswordSetup();
       const storedPassword = getStoredPassword();
 
       // Check if there are encrypted messages in database
-      const hasExisting = await checkForEncryptedMessages(deviceId);
-      setHasEncryptedMessages(hasExisting);
+      const hasExistingEncrypted = await checkForEncryptedMessages(deviceId);
+      setHasEncryptedMessages(hasExistingEncrypted);
 
       if (storedPassword) {
+        // User has password in session - go directly to chat
         passwordRef.current = storedPassword;
         setPasswordState(storedPassword);
         setNeedsPassword(false);
         setIsPasswordSetup(true);
-      } else if (hasSetup || hasExisting) {
-        // Need password if local setup exists OR if there are encrypted messages
+        setShouldLoadMessages(true); // Signal to load messages
+      } else if (hasLocalSetup || hasExistingEncrypted) {
+        // Password required - either local hash exists OR encrypted messages in DB
         setNeedsPassword(true);
-        setIsPasswordSetup(hasExisting); // Treat as setup if encrypted messages exist
+        setIsPasswordSetup(true); // Always true if encryption exists anywhere
+        setIsLoading(false); // Not loading yet, waiting for password
+      } else {
+        // No encryption setup at all - new chat, allow direct access
+        setNeedsPassword(false);
+        setIsPasswordSetup(false);
+        setShouldLoadMessages(true); // Can load messages without password
       }
+      setInitComplete(true);
     };
 
     initEncryption();
-  }, [checkForEncryptedMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load sender name from localStorage
   useEffect(() => {
@@ -293,24 +307,24 @@ export function useChat(): UseChatReturn {
     channelRef.current = channel;
   }, []);
 
-  // Initialize
+  // Cleanup on unmount
   useEffect(() => {
-    const deviceId = getDeviceId();
-    deviceIdRef.current = deviceId;
-
-    // Only load messages if we have password or encryption isn't set up yet
-    if (passwordRef.current || !hasPasswordSetup()) {
-      loadMessages(deviceId);
-      setupRealtimeSubscription(deviceId);
-    }
-
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [loadMessages, setupRealtimeSubscription]);
+  }, []);
+
+  // Load messages when shouldLoadMessages becomes true
+  useEffect(() => {
+    if (shouldLoadMessages && deviceIdRef.current) {
+      loadMessages(deviceIdRef.current);
+      setupRealtimeSubscription(deviceIdRef.current);
+      setShouldLoadMessages(false); // Reset flag
+    }
+  }, [shouldLoadMessages, loadMessages, setupRealtimeSubscription]);
 
   // Set password (for both new setup and login)
   const setPassword = useCallback(async (pwd: string) => {
@@ -321,11 +335,12 @@ export function useChat(): UseChatReturn {
     setIsPasswordSetup(true);
 
     // Reload and decrypt messages
-    const deviceId = deviceIdRef.current;
-    if (deviceId) {
-      await loadMessages(deviceId);
-      setupRealtimeSubscription(deviceId);
-    }
+    const deviceId = deviceIdRef.current || getDeviceId();
+    deviceIdRef.current = deviceId;
+
+    setIsLoading(true);
+    await loadMessages(deviceId);
+    setupRealtimeSubscription(deviceId);
   }, [loadMessages, setupRealtimeSubscription]);
 
   // Verify password by trying to decrypt an existing message
