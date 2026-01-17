@@ -26,6 +26,34 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+          const isChat = tab.id === 'chat';
+
+          // Chat button gets special styling
+          if (isChat) {
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className="flex min-h-[49px] flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-none active:opacity-80"
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                  isActive
+                    ? 'bg-[var(--system-green)] text-white'
+                    : 'bg-[var(--system-green)]/20 text-[var(--system-green)]'
+                }`}>
+                  <Icon
+                    size={22}
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                  />
+                </div>
+                <span className={`text-[10px] font-medium ${
+                  isActive ? 'text-[var(--system-green)]' : 'text-[var(--system-green)]'
+                }`}>{tab.label}</span>
+              </button>
+            );
+          }
 
           return (
             <button
