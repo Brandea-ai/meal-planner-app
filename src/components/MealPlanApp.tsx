@@ -176,7 +176,7 @@ export function MealPlanApp() {
   const isChatFullscreen = activeTab === 'chat';
 
   return (
-    <div className={`min-h-screen bg-[var(--background)] ${isChatFullscreen ? '' : 'pb-28'}`}>
+    <div className={`min-h-screen bg-[var(--background)] ${isChatFullscreen ? '' : 'pb-20'}`}>
       {/* Header - hidden in chat mode */}
       <AnimatePresence>
         {!isChatFullscreen && (
