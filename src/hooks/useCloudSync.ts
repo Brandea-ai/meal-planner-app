@@ -8,7 +8,7 @@ const defaultPreferences: UserPreferences = {
   prepTimePreference: 'normal',
   mealPrepEnabled: false,
   dietaryRestrictions: [],
-  servings: 2,
+  servings: 3, // Default: 3 Personen
   shoppingListFilter: 'all',
   autoSyncShoppingFilter: true,
 };
@@ -19,6 +19,8 @@ const defaultProgress: UserProgress = {
   startDate: null,
   preferences: defaultPreferences,
   shoppingListChecked: [],
+  ingredientCustomizations: [],
+  mealNotes: [],
 };
 
 interface CloudSyncReturn {
@@ -64,8 +66,10 @@ export function useCloudSync(): CloudSyncReturn {
           completedDays: data.completed_days || [],
           currentDay: data.current_day || 1,
           startDate: data.start_date,
-          preferences: data.preferences || defaultPreferences,
+          preferences: { ...defaultPreferences, ...data.preferences },
           shoppingListChecked: data.shopping_list_checked || [],
+          ingredientCustomizations: data.ingredient_customizations || [],
+          mealNotes: data.meal_notes || [],
         };
         setProgressState(cloudProgress);
         localStorage.setItem('meal-planner-progress', JSON.stringify(cloudProgress));
@@ -83,7 +87,14 @@ export function useCloudSync(): CloudSyncReturn {
       try {
         const localData = localStorage.getItem('meal-planner-progress');
         if (localData) {
-          setProgressState(JSON.parse(localData));
+          const parsed = JSON.parse(localData);
+          // Ensure new fields exist
+          setProgressState({
+            ...defaultProgress,
+            ...parsed,
+            ingredientCustomizations: parsed.ingredientCustomizations || [],
+            mealNotes: parsed.mealNotes || [],
+          });
         }
       } catch (le) {
         console.warn('Failed to load from localStorage:', le);
@@ -123,6 +134,8 @@ export function useCloudSync(): CloudSyncReturn {
           start_date: newProgress.startDate,
           shopping_list_checked: newProgress.shoppingListChecked,
           preferences: newProgress.preferences,
+          ingredient_customizations: newProgress.ingredientCustomizations,
+          meal_notes: newProgress.mealNotes,
         }, {
           onConflict: 'device_id',
         });

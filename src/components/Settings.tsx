@@ -165,7 +165,12 @@ export function Settings() {
         <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Users size={20} className="text-[var(--system-blue)]" />
-            <span className="text-[var(--foreground)]">Portionen</span>
+            <div>
+              <span className="block text-[var(--foreground)]">Portionen</span>
+              <span className="text-xs text-[var(--foreground-tertiary)]">
+                Skaliert alle Mengenangaben
+              </span>
+            </div>
           </div>
           <select
             value={progress.preferences.servings}
@@ -176,6 +181,8 @@ export function Settings() {
             <option value={2}>2 Personen</option>
             <option value={3}>3 Personen</option>
             <option value={4}>4 Personen</option>
+            <option value={5}>5 Personen</option>
+            <option value={6}>6 Personen</option>
           </select>
         </div>
 
@@ -185,16 +192,21 @@ export function Settings() {
         <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <Timer size={20} className="text-[var(--system-orange)]" />
-            <span className="text-[var(--foreground)]">Zubereitungszeit</span>
+            <div>
+              <span className="block text-[var(--foreground)]">Zubereitungszeit</span>
+              <span className="text-xs text-[var(--foreground-tertiary)]">
+                Warnt bei längeren Gerichten
+              </span>
+            </div>
           </div>
           <select
             value={progress.preferences.prepTimePreference}
             onChange={handlePrepTimeChange}
             className="rounded-[8px] border-0 bg-[var(--fill-tertiary)] px-3 py-1.5 text-sm text-[var(--foreground)] focus:outline-none"
           >
-            <option value="quick">Schnell</option>
-            <option value="normal">Normal</option>
-            <option value="extended">Ausführlich</option>
+            <option value="quick">≤12 Min</option>
+            <option value="normal">≤25 Min</option>
+            <option value="extended">Unbegrenzt</option>
           </select>
         </div>
 

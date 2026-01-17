@@ -21,12 +21,33 @@ export interface Meal {
   proteinOptions?: string[]; // For meals with protein alternatives
 }
 
+// Ingredient customization per meal
+export interface IngredientCustomization {
+  mealId: number;
+  mealType: MealType;
+  ingredientName: string;
+  customAmount?: string; // User-modified amount
+  isHidden: boolean; // User removed this ingredient
+}
+
+// Meal note stored locally
+export interface StoredMealNote {
+  mealId: number;
+  mealType: MealType;
+  note: string;
+  updatedAt: string;
+}
+
 export interface UserProgress {
   completedDays: number[];
   currentDay: number;
   startDate: string | null;
   preferences: UserPreferences;
   shoppingListChecked: string[];
+  // New: ingredient customizations
+  ingredientCustomizations: IngredientCustomization[];
+  // New: meal notes
+  mealNotes: StoredMealNote[];
 }
 
 export interface UserPreferences {

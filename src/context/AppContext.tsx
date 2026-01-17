@@ -2,13 +2,13 @@
 
 import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import { useCloudSync } from '@/hooks/useCloudSync';
-import { UserProgress, UserPreferences } from '@/types';
+import { UserProgress, UserPreferences, MealType, IngredientCustomization, StoredMealNote } from '@/types';
 
 const defaultPreferences: UserPreferences = {
   prepTimePreference: 'normal',
   mealPrepEnabled: false,
   dietaryRestrictions: [],
-  servings: 2,
+  servings: 3, // Default: 3 Personen
   shoppingListFilter: 'all',
   autoSyncShoppingFilter: true,
 };
@@ -27,6 +27,16 @@ interface AppContextType {
   startPlan: () => void;
   getCompletionPercentage: () => number;
   switchDevice: (deviceId: string) => Promise<void>;
+  // New: Ingredient management
+  hideIngredient: (mealId: number, mealType: MealType, ingredientName: string) => void;
+  showIngredient: (mealId: number, mealType: MealType, ingredientName: string) => void;
+  updateIngredientAmount: (mealId: number, mealType: MealType, ingredientName: string, amount: string) => void;
+  resetIngredientAmount: (mealId: number, mealType: MealType, ingredientName: string) => void;
+  getIngredientCustomization: (mealId: number, mealType: MealType, ingredientName: string) => IngredientCustomization | undefined;
+  // New: Notes management
+  saveMealNote: (mealId: number, mealType: MealType, note: string) => void;
+  getMealNote: (mealId: number, mealType: MealType) => string;
+  deleteMealNote: (mealId: number, mealType: MealType) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -81,6 +91,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       startDate: null,
       preferences: defaultPreferences,
       shoppingListChecked: [],
+      ingredientCustomizations: [],
+      mealNotes: [],
     });
   }, [setProgress]);
 
@@ -96,6 +108,131 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return Math.round((progress.completedDays.length / 7) * 100);
   }, [progress.completedDays.length]);
 
+  // ============================================
+  // Ingredient Management
+  // ============================================
+
+  const hideIngredient = useCallback((mealId: number, mealType: MealType, ingredientName: string) => {
+    setProgress((prev) => {
+      const existing = prev.ingredientCustomizations.find(
+        (c) => c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName
+      );
+
+      if (existing) {
+        return {
+          ...prev,
+          ingredientCustomizations: prev.ingredientCustomizations.map((c) =>
+            c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName
+              ? { ...c, isHidden: true }
+              : c
+          ),
+        };
+      }
+
+      return {
+        ...prev,
+        ingredientCustomizations: [
+          ...prev.ingredientCustomizations,
+          { mealId, mealType, ingredientName, isHidden: true },
+        ],
+      };
+    });
+  }, [setProgress]);
+
+  const showIngredient = useCallback((mealId: number, mealType: MealType, ingredientName: string) => {
+    setProgress((prev) => ({
+      ...prev,
+      ingredientCustomizations: prev.ingredientCustomizations.filter(
+        (c) => !(c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName && c.isHidden)
+      ),
+    }));
+  }, [setProgress]);
+
+  const updateIngredientAmount = useCallback((mealId: number, mealType: MealType, ingredientName: string, amount: string) => {
+    setProgress((prev) => {
+      const existing = prev.ingredientCustomizations.find(
+        (c) => c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName
+      );
+
+      if (existing) {
+        return {
+          ...prev,
+          ingredientCustomizations: prev.ingredientCustomizations.map((c) =>
+            c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName
+              ? { ...c, customAmount: amount }
+              : c
+          ),
+        };
+      }
+
+      return {
+        ...prev,
+        ingredientCustomizations: [
+          ...prev.ingredientCustomizations,
+          { mealId, mealType, ingredientName, customAmount: amount, isHidden: false },
+        ],
+      };
+    });
+  }, [setProgress]);
+
+  const resetIngredientAmount = useCallback((mealId: number, mealType: MealType, ingredientName: string) => {
+    setProgress((prev) => ({
+      ...prev,
+      ingredientCustomizations: prev.ingredientCustomizations.map((c) =>
+        c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName
+          ? { ...c, customAmount: undefined }
+          : c
+      ).filter((c) => c.customAmount !== undefined || c.isHidden),
+    }));
+  }, [setProgress]);
+
+  const getIngredientCustomization = useCallback((mealId: number, mealType: MealType, ingredientName: string) => {
+    return progress.ingredientCustomizations.find(
+      (c) => c.mealId === mealId && c.mealType === mealType && c.ingredientName === ingredientName
+    );
+  }, [progress.ingredientCustomizations]);
+
+  // ============================================
+  // Notes Management
+  // ============================================
+
+  const saveMealNote = useCallback((mealId: number, mealType: MealType, note: string) => {
+    setProgress((prev) => {
+      const existing = prev.mealNotes.find((n) => n.mealId === mealId && n.mealType === mealType);
+
+      if (existing) {
+        return {
+          ...prev,
+          mealNotes: prev.mealNotes.map((n) =>
+            n.mealId === mealId && n.mealType === mealType
+              ? { ...n, note, updatedAt: new Date().toISOString() }
+              : n
+          ),
+        };
+      }
+
+      return {
+        ...prev,
+        mealNotes: [
+          ...prev.mealNotes,
+          { mealId, mealType, note, updatedAt: new Date().toISOString() } as StoredMealNote,
+        ],
+      };
+    });
+  }, [setProgress]);
+
+  const getMealNote = useCallback((mealId: number, mealType: MealType) => {
+    const note = progress.mealNotes.find((n) => n.mealId === mealId && n.mealType === mealType);
+    return note?.note || '';
+  }, [progress.mealNotes]);
+
+  const deleteMealNote = useCallback((mealId: number, mealType: MealType) => {
+    setProgress((prev) => ({
+      ...prev,
+      mealNotes: prev.mealNotes.filter((n) => !(n.mealId === mealId && n.mealType === mealType)),
+    }));
+  }, [setProgress]);
+
   const value = useMemo(() => ({
     progress,
     isLoaded,
@@ -110,7 +247,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     startPlan,
     getCompletionPercentage,
     switchDevice,
-  }), [progress, isLoaded, syncStatus, deviceId, completeDay, uncompleteDay, setCurrentDay, updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage, switchDevice]);
+    hideIngredient,
+    showIngredient,
+    updateIngredientAmount,
+    resetIngredientAmount,
+    getIngredientCustomization,
+    saveMealNote,
+    getMealNote,
+    deleteMealNote,
+  }), [
+    progress, isLoaded, syncStatus, deviceId, completeDay, uncompleteDay, setCurrentDay,
+    updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage,
+    switchDevice, hideIngredient, showIngredient, updateIngredientAmount, resetIngredientAmount,
+    getIngredientCustomization, saveMealNote, getMealNote, deleteMealNote,
+  ]);
 
   return (
     <AppContext.Provider value={value}>

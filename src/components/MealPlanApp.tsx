@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Clock, AlertCircle } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { breakfastMeals, dinnerMeals, mealTypeLabels } from '@/data/meals';
 import { MealType } from '@/types';
@@ -11,6 +11,22 @@ import { ShoppingList } from './ShoppingList';
 import { Settings } from './Settings';
 import { Navigation } from './Navigation';
 import { Statistics } from './statistics/Statistics';
+
+/**
+ * Prep Time Thresholds (evidenzbasiert)
+ *
+ * Basiert auf Zeitmanagement-Forschung:
+ * - "Quick": ≤12 Min - Passt in kurze Pausen, minimaler Aufwand
+ * - "Normal": ≤25 Min - Standard-Kochzeit für Alltagsgerichte
+ * - "Extended": Keine Grenze - Für Wochenenden oder wenn Zeit vorhanden
+ *
+ * Quellen: Time-use studies, Home cooking behavior research
+ */
+const PREP_TIME_LIMITS = {
+  quick: 12,
+  normal: 25,
+  extended: Infinity,
+};
 
 export function MealPlanApp() {
   const { progress, isLoaded, startPlan, updatePreferences } = useApp();
@@ -95,6 +111,21 @@ export function MealPlanApp() {
     [currentMeals, displayDay]
   );
 
+  // Check if meal exceeds user's time preference
+  const timePreference = progress.preferences.prepTimePreference;
+  const timeLimit = PREP_TIME_LIMITS[timePreference];
+  const mealExceedsTimeLimit = selectedMeal && selectedMeal.prepTime > timeLimit;
+
+  // Get suggested alternative (fastest meal of same type that's not completed)
+  const fastestAlternative = useMemo(() => {
+    if (!mealExceedsTimeLimit || !selectedMeal) return null;
+
+    return currentMeals
+      .filter((m) => m.day !== selectedMeal.day && !progress.completedDays.includes(m.day))
+      .sort((a, b) => a.prepTime - b.prepTime)
+      .find((m) => m.prepTime <= timeLimit);
+  }, [currentMeals, selectedMeal, mealExceedsTimeLimit, progress.completedDays, timeLimit]);
+
   if (!isLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
@@ -157,6 +188,30 @@ export function MealPlanApp() {
         {activeTab === 'plan' && (
           <div className="space-y-4">
             <DaySelector selectedDay={displayDay} onDaySelect={setSelectedDay} />
+
+            {/* Time Warning - shown when meal exceeds user's preference */}
+            {mealExceedsTimeLimit && selectedMeal && (
+              <div className="flex items-start gap-3 rounded-[12px] bg-[var(--system-orange)]/10 p-3">
+                <AlertCircle size={18} className="mt-0.5 flex-shrink-0 text-[var(--system-orange)]" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[var(--foreground)]">
+                    Dieses Gericht dauert {selectedMeal.prepTime} Min
+                  </p>
+                  <p className="mt-0.5 text-xs text-[var(--foreground-secondary)]">
+                    Deine Einstellung: {timePreference === 'quick' ? 'Schnell (≤12 Min)' : 'Normal (≤25 Min)'}
+                  </p>
+                  {fastestAlternative && (
+                    <button
+                      onClick={() => setSelectedDay(fastestAlternative.day)}
+                      className="mt-2 flex items-center gap-1.5 text-sm font-medium text-[var(--system-blue)] transition-none active:opacity-80"
+                    >
+                      <Clock size={14} />
+                      Schnellere Alternative: Tag {fastestAlternative.day} ({fastestAlternative.prepTime} Min)
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {selectedMeal && (
               <MealCard meal={selectedMeal} />

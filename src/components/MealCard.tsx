@@ -1,16 +1,39 @@
 'use client';
 
-import { Check, Clock, Globe, Utensils, ChefHat, Sparkles, StickyNote } from 'lucide-react';
-import { Meal } from '@/types';
+import { useState } from 'react';
+import { Check, Clock, Globe, Utensils, ChefHat, Sparkles, X, RotateCcw, Pencil } from 'lucide-react';
+import { Meal, MealType } from '@/types';
 import { useApp } from '@/context/AppContext';
+import { scaleAmount, getServingsLabel } from '@/utils/portionScaling';
+import { MealNoteEditor } from './MealNoteEditor';
 
 interface MealCardProps {
   meal: Meal;
 }
 
 export function MealCard({ meal }: MealCardProps) {
-  const { progress, completeDay, uncompleteDay } = useApp();
+  const {
+    progress,
+    completeDay,
+    uncompleteDay,
+    hideIngredient,
+    showIngredient,
+    updateIngredientAmount,
+    resetIngredientAmount,
+    getIngredientCustomization,
+    saveMealNote,
+    getMealNote,
+  } = useApp();
+
   const isCompleted = progress.completedDays.includes(meal.day);
+  const servings = progress.preferences.servings;
+  const [editingIngredient, setEditingIngredient] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState('');
+
+  // Get hidden ingredients for this meal
+  const hiddenIngredients = progress.ingredientCustomizations
+    .filter((c) => c.mealId === meal.id && c.mealType === meal.type && c.isHidden)
+    .map((c) => c.ingredientName);
 
   const handleToggleComplete = () => {
     if (isCompleted) {
@@ -19,6 +42,47 @@ export function MealCard({ meal }: MealCardProps) {
       completeDay(meal.day);
     }
   };
+
+  const handleHideIngredient = (ingredientName: string) => {
+    hideIngredient(meal.id, meal.type as MealType, ingredientName);
+  };
+
+  const handleShowIngredient = (ingredientName: string) => {
+    showIngredient(meal.id, meal.type as MealType, ingredientName);
+  };
+
+  const handleStartEditAmount = (ingredientName: string, currentAmount: string) => {
+    setEditingIngredient(ingredientName);
+    setEditAmount(currentAmount);
+  };
+
+  const handleSaveAmount = (ingredientName: string) => {
+    if (editAmount.trim()) {
+      updateIngredientAmount(meal.id, meal.type as MealType, ingredientName, editAmount.trim());
+    }
+    setEditingIngredient(null);
+    setEditAmount('');
+  };
+
+  const handleResetAmount = (ingredientName: string) => {
+    resetIngredientAmount(meal.id, meal.type as MealType, ingredientName);
+    setEditingIngredient(null);
+  };
+
+  const handleSaveNote = (note: string) => {
+    saveMealNote(meal.id, meal.type as MealType, note);
+  };
+
+  // Get customized or scaled amount for an ingredient
+  const getDisplayAmount = (ingredientName: string, originalAmount: string | undefined, category: string) => {
+    const customization = getIngredientCustomization(meal.id, meal.type as MealType, ingredientName);
+    if (customization?.customAmount) {
+      return customization.customAmount;
+    }
+    return scaleAmount(originalAmount, servings, category);
+  };
+
+  const currentNote = getMealNote(meal.id, meal.type as MealType);
 
   return (
     <article
@@ -34,7 +98,7 @@ export function MealCard({ meal }: MealCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <span className="text-xs font-medium text-[var(--foreground-tertiary)]">
-              Tag {meal.day}
+              Tag {meal.day} · {getServingsLabel(servings)}
             </span>
             <h2 className="mt-0.5 text-xl font-bold text-[var(--foreground)]">
               {meal.title}
@@ -68,28 +132,130 @@ export function MealCard({ meal }: MealCardProps) {
 
       {/* Ingredients */}
       <section className="px-4 pb-3" aria-labelledby={`ingredients-${meal.id}`}>
-        <div className="flex items-center gap-2">
-          <Utensils size={14} className="text-[var(--foreground-tertiary)]" />
-          <h3 id={`ingredients-${meal.id}`} className="text-sm font-semibold text-[var(--foreground)]">
-            Zutaten
-          </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Utensils size={14} className="text-[var(--foreground-tertiary)]" />
+            <h3 id={`ingredients-${meal.id}`} className="text-sm font-semibold text-[var(--foreground)]">
+              Zutaten
+            </h3>
+          </div>
+          <span className="text-xs text-[var(--foreground-tertiary)]">
+            Tippen zum Bearbeiten
+          </span>
         </div>
-        <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-          {meal.ingredients.map((ingredient, idx) => (
-            <li
-              key={idx}
-              className="flex items-baseline gap-1.5 text-sm text-[var(--foreground-secondary)]"
-            >
-              <span className="h-1 w-1 flex-shrink-0 rounded-full bg-[var(--gray-3)]" aria-hidden="true" />
-              <span className="flex-1">
-                {ingredient.name}
-                {ingredient.amount && (
-                  <span className="text-[var(--foreground-tertiary)]"> ({ingredient.amount})</span>
-                )}
-              </span>
-            </li>
-          ))}
+
+        <ul className="mt-2 space-y-1.5">
+          {meal.ingredients.map((ingredient) => {
+            const isHidden = hiddenIngredients.includes(ingredient.name);
+            const isEditing = editingIngredient === ingredient.name;
+            const displayAmount = getDisplayAmount(ingredient.name, ingredient.amount, ingredient.category);
+            const customization = getIngredientCustomization(meal.id, meal.type as MealType, ingredient.name);
+            const hasCustomAmount = !!customization?.customAmount;
+
+            if (isHidden) {
+              return (
+                <li
+                  key={ingredient.name}
+                  className="flex items-center justify-between rounded-[8px] bg-[var(--fill-tertiary)] px-3 py-2 opacity-50"
+                >
+                  <span className="text-sm text-[var(--foreground-tertiary)] line-through">
+                    {ingredient.name}
+                  </span>
+                  <button
+                    onClick={() => handleShowIngredient(ingredient.name)}
+                    className="flex items-center gap-1 text-xs text-[var(--system-blue)] transition-none active:opacity-80"
+                  >
+                    <RotateCcw size={12} />
+                    Wiederherstellen
+                  </button>
+                </li>
+              );
+            }
+
+            if (isEditing) {
+              return (
+                <li
+                  key={ingredient.name}
+                  className="rounded-[8px] bg-[var(--system-blue)]/10 p-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-[var(--foreground)]">
+                      {ingredient.name}
+                    </span>
+                    <button
+                      onClick={() => setEditingIngredient(null)}
+                      className="text-[var(--foreground-tertiary)]"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      value={editAmount}
+                      onChange={(e) => setEditAmount(e.target.value)}
+                      placeholder="Neue Menge..."
+                      className="flex-1 rounded-[6px] bg-[var(--background)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleSaveAmount(ingredient.name)}
+                      className="rounded-[6px] bg-[var(--system-blue)] px-3 py-1.5 text-sm font-medium text-white transition-none active:opacity-80"
+                    >
+                      OK
+                    </button>
+                  </div>
+                  {hasCustomAmount && (
+                    <button
+                      onClick={() => handleResetAmount(ingredient.name)}
+                      className="mt-2 flex items-center gap-1 text-xs text-[var(--foreground-tertiary)]"
+                    >
+                      <RotateCcw size={10} />
+                      Auf Original zurücksetzen
+                    </button>
+                  )}
+                </li>
+              );
+            }
+
+            return (
+              <li
+                key={ingredient.name}
+                className="flex items-center justify-between rounded-[8px] bg-[var(--fill-tertiary)] px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleHideIngredient(ingredient.name)}
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--fill-secondary)] text-[var(--foreground-tertiary)] transition-none active:opacity-80"
+                    aria-label={`${ingredient.name} entfernen`}
+                  >
+                    <X size={12} />
+                  </button>
+                  <span className="text-sm text-[var(--foreground)]">
+                    {ingredient.name}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleStartEditAmount(ingredient.name, displayAmount)}
+                  className={`flex items-center gap-1 text-sm transition-none active:opacity-80 ${
+                    hasCustomAmount
+                      ? 'font-medium text-[var(--system-blue)]'
+                      : 'text-[var(--foreground-tertiary)]'
+                  }`}
+                >
+                  {displayAmount}
+                  <Pencil size={10} className="opacity-50" />
+                </button>
+              </li>
+            );
+          })}
         </ul>
+
+        {hiddenIngredients.length > 0 && (
+          <p className="mt-2 text-center text-xs text-[var(--foreground-tertiary)]">
+            {hiddenIngredients.length} Zutat(en) ausgeblendet
+          </p>
+        )}
       </section>
 
       {/* Protein Options (for flexible meals) */}
@@ -140,12 +306,14 @@ export function MealCard({ meal }: MealCardProps) {
         </div>
       </section>
 
-      {/* Note Section Placeholder - Will be filled by MealNoteEditor */}
+      {/* Working Note Section */}
       <section className="border-t border-[var(--separator)] px-4 py-3">
-        <div className="flex items-center gap-2 text-[var(--foreground-tertiary)]">
-          <StickyNote size={14} />
-          <span className="text-sm">Notiz hinzufügen...</span>
-        </div>
+        <MealNoteEditor
+          mealId={meal.id}
+          mealType={meal.type as MealType}
+          initialNote={currentNote}
+          onSave={handleSaveNote}
+        />
       </section>
 
       {/* Complete Button */}

@@ -5,6 +5,7 @@ import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Pl
 import { useApp } from '@/context/AppContext';
 import { breakfastShoppingList, dinnerShoppingList, categoryLabels, mealTypeLabels } from '@/data/meals';
 import { MealType } from '@/types';
+import { scaleAmount, getServingsLabel } from '@/utils/portionScaling';
 
 type ShoppingFilter = MealType | 'all';
 
@@ -24,6 +25,8 @@ export function ShoppingList() {
   const { progress, toggleShoppingItem } = useApp();
   const [filter, setFilter] = useState<ShoppingFilter>('all');
   const [expandedCategories, setExpandedCategories] = useState<string[]>(categoryOrder);
+
+  const servings = progress.preferences.servings;
 
   // Get filtered shopping list
   const shoppingList = useMemo(() => {
@@ -127,7 +130,7 @@ export function ShoppingList() {
         </div>
 
         <p className="mt-3 text-center text-sm text-[var(--foreground-tertiary)]">
-          Für 2 Personen / 7 Tage
+          {getServingsLabel(servings)} · 7 Tage
         </p>
 
         {/* Progress bar */}
@@ -199,6 +202,8 @@ export function ShoppingList() {
                 >
                   {items.map((item) => {
                     const isChecked = progress.shoppingListChecked.includes(item.name);
+                    const scaledAmount = scaleAmount(item.amount, servings, item.category);
+
                     return (
                       <li key={item.name}>
                         <label className="flex min-h-[44px] cursor-pointer items-center gap-3 px-4 py-2 transition-none active:opacity-80">
@@ -218,7 +223,7 @@ export function ShoppingList() {
                             {item.name}
                           </span>
                           <span className="text-sm text-[var(--foreground-tertiary)]">
-                            {item.amount}
+                            {scaledAmount}
                           </span>
                         </label>
                       </li>
