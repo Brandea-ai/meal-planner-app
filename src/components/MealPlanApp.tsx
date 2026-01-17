@@ -12,32 +12,29 @@ import { Navigation } from './Navigation';
 export function MealPlanApp() {
   const { progress, isLoaded, startPlan } = useApp();
   const [activeTab, setActiveTab] = useState<'plan' | 'shopping' | 'settings'>('plan');
-  const [selectedDay, setSelectedDay] = useState(() => progress.currentDay || 1);
+  const [selectedDay, setSelectedDay] = useState(1);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
+  const hasStarted = useRef(false);
 
   // Minimum swipe distance
   const minSwipeDistance = 50;
 
-  // Initialize selected day from progress (only once)
+  // Initialize selected day and start plan after load
   useEffect(() => {
-    if (isLoaded && !hasInitialized.current && progress.currentDay) {
-      hasInitialized.current = true;
-      // Use a ref to track if we need to update
-      const timer = setTimeout(() => {
-        setSelectedDay(progress.currentDay);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoaded, progress.currentDay]);
+    if (!isLoaded) return;
 
-  // Auto-start plan
-  useEffect(() => {
-    if (isLoaded && !progress.startDate) {
+    if (!hasInitialized.current && progress.currentDay) {
+      hasInitialized.current = true;
+      setSelectedDay(progress.currentDay);
+    }
+
+    if (!hasStarted.current && !progress.startDate) {
+      hasStarted.current = true;
       startPlan();
     }
-  }, [isLoaded, progress.startDate, startPlan]);
+  }, [isLoaded, progress.currentDay, progress.startDate, startPlan]);
 
   const handleSwipe = useCallback((startX: number, endX: number) => {
     const distance = startX - endX;
@@ -89,7 +86,7 @@ export function MealPlanApp() {
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
       </div>
     );
@@ -126,13 +123,7 @@ export function MealPlanApp() {
             </p>
 
             {selectedMeal && (
-              <div
-                className="transition-all duration-300"
-                style={{
-                  transform: 'translateX(0)',
-                  opacity: 1,
-                }}
-              >
+              <div className="transition-all duration-300">
                 <MealCard meal={selectedMeal} />
               </div>
             )}
