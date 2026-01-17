@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus, Trash2, Search, X } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { unifiedShoppingList, categoryLabels } from '@/data/meals';
 import { LocalCustomShoppingItem } from '@/types';
@@ -41,18 +41,36 @@ export function ShoppingList() {
   const { progress, toggleShoppingItem, addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem } = useApp();
   const [expandedCategories, setExpandedCategories] = useState<string[]>(categoryOrder);
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const servings = progress.preferences.servings;
   const customItems = progress.customShoppingItems || [];
   const shoppingList = unifiedShoppingList;
 
+  // Filter items based on search query
+  const normalizedQuery = searchQuery.toLowerCase().trim();
+
+  const filteredShoppingList = useMemo(() => {
+    if (!normalizedQuery) return shoppingList;
+    return shoppingList.filter((item) =>
+      item.name.toLowerCase().includes(normalizedQuery)
+    );
+  }, [shoppingList, normalizedQuery]);
+
+  const filteredCustomItems = useMemo(() => {
+    if (!normalizedQuery) return customItems;
+    return customItems.filter((item) =>
+      item.name.toLowerCase().includes(normalizedQuery)
+    );
+  }, [customItems, normalizedQuery]);
+
   const availableCategories = useMemo(() => {
     const cats = new Set([
-      ...shoppingList.map((item) => item.category),
-      ...customItems.map((item) => item.category),
+      ...filteredShoppingList.map((item) => item.category),
+      ...filteredCustomItems.map((item) => item.category),
     ]);
     return categoryOrder.filter((cat) => cats.has(cat as typeof shoppingList[number]['category']));
-  }, [shoppingList, customItems]);
+  }, [filteredShoppingList, filteredCustomItems, shoppingList]);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories((prev) =>
@@ -63,16 +81,16 @@ export function ShoppingList() {
   };
 
   const getCategoryItems = (category: string) =>
-    shoppingList.filter((item) => item.category === category);
+    filteredShoppingList.filter((item) => item.category === category);
 
   const getCategoryMainItems = (category: string) =>
-    shoppingList.filter((item) => item.category === category && !item.forSideDish);
+    filteredShoppingList.filter((item) => item.category === category && !item.forSideDish);
 
   const getCategorySideItems = (category: string) =>
-    shoppingList.filter((item) => item.category === category && item.forSideDish);
+    filteredShoppingList.filter((item) => item.category === category && item.forSideDish);
 
   const getCategoryCustomItems = (category: string) =>
-    customItems.filter((item) => item.category === category);
+    filteredCustomItems.filter((item) => item.category === category);
 
   const getCategoryProgress = (category: string) => {
     const standardItems = getCategoryItems(category);
@@ -152,6 +170,33 @@ export function ShoppingList() {
             aria-label={`${totalProgress.checked} von ${totalProgress.total} Artikeln eingekauft`}
           />
         </div>
+
+        {/* Search Bar */}
+        <div className="mt-4 relative">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-tertiary)]">
+            <Search size={18} />
+          </div>
+          <input
+            type="text"
+            placeholder="Zutat suchen..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-[12px] border border-[var(--glass-border)] bg-[var(--fill-tertiary)] py-3 pl-10 pr-10 text-[15px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+          />
+          <AnimatePresence>
+            {searchQuery && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--fill-secondary)] text-[var(--foreground-secondary)]"
+              >
+                <X size={14} />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
       </header>
 
       {/* Add Custom Item Button */}
@@ -169,6 +214,20 @@ export function ShoppingList() {
 
       {/* Categories */}
       <div className="divide-y divide-[var(--glass-border)]">
+        {/* No results message */}
+        {searchQuery && availableCategories.length === 0 && (
+          <div className="px-5 py-8 text-center">
+            <div className="flex justify-center mb-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--fill-tertiary)]">
+                <Search size={24} className="text-[var(--foreground-tertiary)]" />
+              </div>
+            </div>
+            <p className="text-[var(--foreground-secondary)]">
+              Keine Zutaten gefunden für &quot;{searchQuery}&quot;
+            </p>
+          </div>
+        )}
+
         {availableCategories.map((category) => {
           const items = getCategoryItems(category);
           const customCategoryItems = getCategoryCustomItems(category);

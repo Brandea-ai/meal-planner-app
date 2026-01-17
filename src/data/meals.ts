@@ -1,4 +1,4 @@
-import { Meal, ShoppingItem } from '@/types';
+import { Meal, ShoppingItem, PreparationStep } from '@/types';
 
 // ============================================
 // FRÜHSTÜCK (Breakfast) - 7 Tage
@@ -188,6 +188,14 @@ export const dinnerMeals: Meal[] = [
     benefit: "Proteinreich, mediterrane Aromen, ausgewogene Makros",
     prepTime: 25,
     tags: ["proteinreich", "mediterran", "grillen"],
+    preparationSteps: [
+      { step: 1, title: "Marinade", description: "Hähnchen würfeln. In Schüssel: Olivenöl, Zitronensaft, geriebener Knoblauch, Paprika, Oregano/Thymian, Pfeffer, wenig Salz. 10-30 Min ziehen lassen.", duration: "5 Min", tip: "Mehr Marinierzeit = mehr Aroma" },
+      { step: 2, title: "Bulgur kochen", description: "Bulgur mit heißem Wasser/Brühe aufkochen, dann quellen lassen. Mit Zitrone + Petersilie finishen.", duration: "10-12 Min" },
+      { step: 3, title: "Dip zubereiten", description: "Joghurt + geriebene Gurke (ausdrücken!) + Knoblauch + Zitrone + Dill/Minze mischen.", duration: "3 Min", tip: "Gurke ausdrücken = kein wässriger Dip" },
+      { step: 4, title: "Salat schneiden", description: "Tomate/Gurke/Paprika/Zwiebel schneiden. Dressing: Olivenöl + Zitrone, Pfeffer.", duration: "5 Min" },
+      { step: 5, title: "Spieße braten", description: "Auf Spieße stecken oder als Stücke braten. Hohe Hitze, anbräunen lassen. Kerntemperatur 74°C.", duration: "8-12 Min", tip: "Nicht zu früh wenden: erst bräunen lassen → Geschmack (Maillard)" },
+      { step: 6, title: "Anrichten", description: "Tellerregel: ½ Salat, ¼ Hähnchen, ¼ Bulgur, Dip daneben.", duration: "2 Min" },
+    ],
   },
   {
     id: 102,
@@ -213,6 +221,15 @@ export const dinnerMeals: Meal[] = [
     benefit: "Omega-3 + viel Gemüse + komplexe Kohlenhydrate",
     prepTime: 35,
     tags: ["omega-3", "ofengericht", "französisch"],
+    preparationSteps: [
+      { step: 1, title: "Ofen vorheizen", description: "Ofen auf 200°C (Umluft 180-190°C) vorheizen.", duration: "2 Min" },
+      { step: 2, title: "Kartoffeln vorbereiten", description: "Kartoffeln in Spalten schneiden, mit Olivenöl, wenig Salz, Pfeffer, Rosmarin/Thymian mischen. Auf Blech verteilen.", duration: "5 Min" },
+      { step: 3, title: "Kartoffeln in den Ofen", description: "Kartoffeln 25-35 Min backen bis goldbraun.", duration: "25-35 Min" },
+      { step: 4, title: "Ratatouille starten", description: "Zwiebel + Knoblauch in wenig Öl anschwitzen. Dann Paprika/Aubergine 5-7 Min, dann Zucchini 5 Min, dann Tomaten/Passata + Kräuter. Leise köcheln lassen.", duration: "20-25 Min", tip: "Ratatouille wird besser wenn sämig reduziert (nicht suppig)" },
+      { step: 5, title: "Lachs vorbereiten", description: "Lachs sparsam salzen, pfeffern, mit Zitrone und Kräutern würzen.", duration: "2 Min" },
+      { step: 6, title: "Lachs backen", description: "Lachs auf zweites Blech oder die letzten 12 Min zu den Kartoffeln legen. Kerntemperatur 63°C.", duration: "10-14 Min", tip: "Lachs bleibt saftiger wenn er nicht übergart (Thermometer = König)" },
+      { step: 7, title: "Finish & Anrichten", description: "Ratatouille mit Zitronenzeste oder 1 TL Essig abrunden. Alles zusammen servieren.", duration: "2 Min" },
+    ],
   },
   {
     id: 103,
@@ -238,6 +255,14 @@ export const dinnerMeals: Meal[] = [
     benefit: "Flexibles Protein + knackiges Gemüse + Vollkorn",
     prepTime: 20,
     tags: ["asiatisch", "flexibel", "wok"],
+    preparationSteps: [
+      { step: 1, title: "Reis starten", description: "Vollkornreis braucht länger (30-40 Min). Erst starten!", duration: "30-40 Min" },
+      { step: 2, title: "Mise en place", description: "Gemüse in mundgerechte Stücke schneiden. Sauce bereit: Sojasauce + etwas Wasser + Ingwer + Knoblauch + optional Chili + Spritzer Zitrone/Limette.", duration: "10 Min", tip: "Wichtig: Alles vorbereiten bevor Wok heiß wird!" },
+      { step: 3, title: "Protein anbraten", description: "Hähnchen: trocken tupfen, kurz in heißer Pfanne anbraten bis Farbe, dann rausnehmen. Tofu: gut ausdrücken, würfeln, optional mit 1 TL Stärke bestäuben, heiß anbraten, rausnehmen.", duration: "5-7 Min", tip: "Tofu mit Stärke = knuspriger" },
+      { step: 4, title: "Gemüse braten", description: "In Reihenfolge (hart → weich): Karotte/Brokkoli zuerst, dann Paprika. Hohe Hitze, kurz, damit's knackig bleibt.", duration: "5-7 Min", tip: "Pfanne richtig heiß = Wok-Flavor statt Gemüse kochen" },
+      { step: 5, title: "Alles zusammen", description: "Protein zurück in den Wok, Sauce rein, 1-2 Min glasieren lassen. Optional Sesam drüber.", duration: "2-3 Min", tip: "Sojasauce erst am Ende → weniger salz-lastig, mehr Aroma" },
+      { step: 6, title: "Anrichten", description: "Nach Tellerregel mit Reis servieren.", duration: "2 Min" },
+    ],
   },
   {
     id: 104,
@@ -261,6 +286,14 @@ export const dinnerMeals: Meal[] = [
     benefit: "Schnell, vegetarisch, ballaststoffreich durch Vollkorn",
     prepTime: 20,
     tags: ["vegetarisch", "schnell", "pasta"],
+    preparationSteps: [
+      { step: 1, title: "Ofen vorheizen", description: "Ofen auf 200°C vorheizen.", duration: "2 Min" },
+      { step: 2, title: "Blech vorbereiten", description: "Kirschtomaten + Knoblauch + 1-2 EL Olivenöl auf Blech verteilen. Feta in die Mitte legen.", duration: "3 Min" },
+      { step: 3, title: "Backen", description: "20 Min backen bis Tomaten platzen und Feta weich ist.", duration: "20 Min" },
+      { step: 4, title: "Pasta kochen", description: "Vollkornpasta kochen. Wichtig: 1 Tasse Nudelwasser aufheben!", duration: "10-12 Min", tip: "Nudelwasser ist dein Emulgator → cremiger ohne Sahne" },
+      { step: 5, title: "Sauce bauen", description: "Feta + Tomaten zerdrücken, mit Zitronensaft + Nudelwasser cremig rühren. Optional Kichererbsen unterheben.", duration: "3 Min", tip: "Kein extra Salz (Feta ist salzig genug)" },
+      { step: 6, title: "Finish", description: "Rucola erst ganz am Ende unterheben (sonst wird er matschig). Sofort servieren.", duration: "2 Min" },
+    ],
   },
   {
     id: 105,
@@ -287,6 +320,14 @@ export const dinnerMeals: Meal[] = [
     benefit: "Würzig, proteinreich, perfekte Bowl-Balance",
     prepTime: 25,
     tags: ["arabisch", "bowl", "würzig"],
+    preparationSteps: [
+      { step: 1, title: "Marinade", description: "Joghurt + Zitrone + Knoblauch + Kreuzkümmel + Paprika + Kurkuma + Pfeffer mischen. Hähnchen darin marinieren, 15-60 Min.", duration: "5 Min", tip: "Joghurt-Marinade macht Hähnchen zarter und schmeckt Street-Food, ohne fettig zu sein" },
+      { step: 2, title: "Beilage kochen", description: "Vollkornbulgur oder Vollkornreis nach Packungsanweisung kochen.", duration: "15-25 Min" },
+      { step: 3, title: "Hähnchen garen", description: "Pfanne: scharf anbraten, dann mittel fertig ziehen. ODER Ofen: 200°C, 18-25 Min (je nach Dicke). Kerntemperatur 74°C.", duration: "15-25 Min" },
+      { step: 4, title: "Bowl-Gemüse", description: "Gurke/Tomate/Rotkohl schneiden.", duration: "5 Min" },
+      { step: 5, title: "Sauce", description: "Joghurt + Zitrone + Knoblauch + optional Minze mischen.", duration: "3 Min" },
+      { step: 6, title: "Anrichten", description: "Bowl aufbauen: Beilage, Gemüse, Hähnchen, Sauce. Optional eingelegte Zwiebeln.", duration: "3 Min" },
+    ],
   },
   {
     id: 106,
@@ -314,6 +355,14 @@ export const dinnerMeals: Meal[] = [
     benefit: "Pflanzliches Protein, ballaststoffreich, einfach",
     prepTime: 30,
     tags: ["vegetarisch", "hülsenfrüchte", "ofenblech"],
+    preparationSteps: [
+      { step: 1, title: "Ofen vorheizen", description: "Ofen auf 220°C vorheizen (für Röstaromen).", duration: "2 Min" },
+      { step: 2, title: "Kichererbsen trocknen", description: "Kichererbsen abspülen, dann wirklich trocken tupfen!", duration: "3 Min", tip: "Trocken = röstig, nass = weich" },
+      { step: 3, title: "Blech vorbereiten", description: "Kichererbsen + Gemüse aufs Blech, mit Olivenöl, Kreuzkümmel, Paprika, Pfeffer, wenig Salz mischen.", duration: "5 Min", tip: "Nicht überladenes Blech: lieber 2 Bleche als Dampfgarer" },
+      { step: 4, title: "Backen", description: "25-35 Min backen, nach 15 Min einmal wenden.", duration: "25-35 Min" },
+      { step: 5, title: "Tahini-Dip", description: "Joghurt + Tahini + Zitrone + Knoblauch + Wasser nach Bedarf (bis cremig) mischen.", duration: "3 Min" },
+      { step: 6, title: "Finish", description: "Zitronensaft über das Blech, Kräuter (Petersilie) drüber wenn vorhanden. Mit Dip servieren.", duration: "2 Min" },
+    ],
   },
   {
     id: 107,
@@ -341,6 +390,16 @@ export const dinnerMeals: Meal[] = [
     benefit: "Hochwertiges Protein, aromatisch, ausgewogen",
     prepTime: 30,
     tags: ["fleisch", "kofta", "ofengericht"],
+    preparationSteps: [
+      { step: 1, title: "Ofen vorheizen", description: "Ofen auf 210°C vorheizen.", duration: "2 Min" },
+      { step: 2, title: "Gemüse vorbereiten", description: "Gemüse schneiden, mit Öl + Gewürzen aufs Blech verteilen.", duration: "5 Min" },
+      { step: 3, title: "Gemüse in den Ofen", description: "25-30 Min backen.", duration: "25-30 Min" },
+      { step: 4, title: "Kofta-Masse", description: "Rinderhack + fein geriebene Zwiebel (ausdrücken!) + Petersilie + Kreuzkümmel + Paprika + Pfeffer + wenig Salz. Nur kurz mischen, nicht kneten wie Teig!", duration: "5 Min", tip: "Zwiebel ausdrücken → Kofta wird saftiger und fällt nicht auseinander" },
+      { step: 5, title: "Formen", description: "Ovale Röllchen formen. Optional 10 Min kalt stellen (hält besser).", duration: "5 Min" },
+      { step: 6, title: "Kofta braten", description: "In heißer Pfanne rundum bräunen, dann bei mittlerer Hitze fertig ziehen. Kerntemperatur 71°C.", duration: "10-12 Min", tip: "Nach dem Braten 2 Min ruhen lassen" },
+      { step: 7, title: "Dip", description: "Joghurt + Zitrone + Knoblauch mischen.", duration: "2 Min" },
+      { step: 8, title: "Anrichten", description: "Nach Tellerregel servieren: Gemüse, Kofta, Dip.", duration: "2 Min" },
+    ],
   },
 ];
 

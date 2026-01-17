@@ -7,6 +7,14 @@ export interface Ingredient {
 
 export type MealType = 'breakfast' | 'dinner';
 
+export interface PreparationStep {
+  step: number;
+  title: string;
+  description: string;
+  duration?: string; // e.g., "5 Min"
+  tip?: string; // Pro-Tipp
+}
+
 export interface Meal {
   id: number;
   day: number;
@@ -20,6 +28,7 @@ export interface Meal {
   prepTime: number; // in minutes
   tags: string[];
   proteinOptions?: string[]; // For meals with protein alternatives
+  preparationSteps?: PreparationStep[]; // Step-by-step cooking instructions
 }
 
 // Ingredient customization per meal
