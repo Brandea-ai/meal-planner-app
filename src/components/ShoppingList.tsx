@@ -1,20 +1,21 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { breakfastShoppingList, dinnerShoppingList, categoryLabels, mealTypeLabels } from '@/data/meals';
 import { MealType } from '@/types';
 
 type ShoppingFilter = MealType | 'all';
 
-const categoryIcons: Record<string, string> = {
-  fresh: '🥬',
-  protein: '🥩',
-  dairy: '🥛',
-  legumes: '🫘',
-  grains: '🌾',
-  basics: '🫒',
-  extras: '🧂',
+const categoryIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  fresh: Leaf,
+  protein: Drumstick,
+  dairy: Milk,
+  legumes: Bean,
+  grains: Wheat,
+  basics: Droplets,
+  extras: Sparkles,
 };
 
 const categoryOrder = ['fresh', 'protein', 'dairy', 'legumes', 'grains', 'basics', 'extras'];
@@ -77,46 +78,47 @@ export function ShoppingList() {
   }), [shoppingList, progress.shoppingListChecked]);
 
   return (
-    <section className="rounded-2xl border-2 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-      <header className="border-b border-gray-100 p-4 dark:border-gray-700">
+    <section className="overflow-hidden rounded-[12px] bg-[var(--background-secondary)]">
+      {/* Header */}
+      <header className="p-4 pb-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-xl font-bold text-[var(--foreground)]">
             Einkaufsliste
           </h2>
-          <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+          <span className="rounded-full bg-[var(--system-blue)]/15 px-3 py-1 text-sm font-semibold text-[var(--system-blue)]">
             {totalProgress.checked}/{totalProgress.total}
           </span>
         </div>
 
-        {/* Filter Toggle */}
-        <div className="mt-3 flex justify-center">
-          <div className="inline-flex rounded-xl bg-gray-100 p-1 dark:bg-gray-700">
+        {/* Filter Toggle - Segmented Control */}
+        <div className="mt-4">
+          <div className="flex rounded-[10px] bg-[var(--fill-tertiary)] p-0.5">
             <button
               onClick={() => setFilter('all')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex-1 rounded-[8px] px-3 py-2 text-sm font-medium transition-none active:opacity-80 ${
                 filter === 'all'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
-                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
+                  : 'text-[var(--foreground-secondary)]'
               }`}
             >
               Alles
             </button>
             <button
               onClick={() => setFilter('breakfast')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex-1 rounded-[8px] px-3 py-2 text-sm font-medium transition-none active:opacity-80 ${
                 filter === 'breakfast'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
-                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
+                  : 'text-[var(--foreground-secondary)]'
               }`}
             >
               {mealTypeLabels.breakfast}
             </button>
             <button
               onClick={() => setFilter('dinner')}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex-1 rounded-[8px] px-3 py-2 text-sm font-medium transition-none active:opacity-80 ${
                 filter === 'dinner'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
-                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
+                  : 'text-[var(--foreground-secondary)]'
               }`}
             >
               {mealTypeLabels.dinner}
@@ -124,14 +126,14 @@ export function ShoppingList() {
           </div>
         </div>
 
-        <p className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-3 text-center text-sm text-[var(--foreground-tertiary)]">
           Für 2 Personen / 7 Tage
         </p>
 
         {/* Progress bar */}
-        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[var(--fill-secondary)]">
           <div
-            className="h-full bg-green-500 transition-all duration-300"
+            className="h-full bg-[var(--system-green)] transition-all duration-300"
             style={{ width: `${totalProgress.total > 0 ? (totalProgress.checked / totalProgress.total) * 100 : 0}%` }}
             role="progressbar"
             aria-valuenow={totalProgress.checked}
@@ -142,67 +144,80 @@ export function ShoppingList() {
         </div>
       </header>
 
-      <div className="divide-y divide-gray-100 dark:divide-gray-700">
-        {availableCategories.map((category) => {
+      {/* Add Custom Item Button */}
+      <div className="border-t border-[var(--separator)] px-4 py-3">
+        <button
+          className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--fill-tertiary)] py-3 text-sm font-medium text-[var(--system-blue)] transition-none active:opacity-80"
+        >
+          <Plus size={18} />
+          Eigenen Artikel hinzufügen
+        </button>
+      </div>
+
+      {/* Categories */}
+      <div>
+        {availableCategories.map((category, index) => {
           const items = getCategoryItems(category);
           const { checked, total } = getCategoryProgress(category);
           const isExpanded = expandedCategories.includes(category);
+          const IconComponent = categoryIcons[category] || Sparkles;
 
           return (
             <div key={category}>
+              {/* Inset separator (not on first item) */}
+              {index > 0 && <div className="inset-separator" />}
+
               <button
                 onClick={() => toggleCategory(category)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                className="flex min-h-[44px] w-full items-center justify-between px-4 py-3 text-left transition-none active:opacity-80"
                 aria-expanded={isExpanded}
                 aria-controls={`category-${category}`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl" aria-hidden="true">
-                    {categoryIcons[category]}
-                  </span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--fill-secondary)]">
+                    <IconComponent size={18} className="text-[var(--foreground-secondary)]" />
+                  </div>
+                  <span className="font-semibold text-[var(--foreground)]">
                     {categoryLabels[category]}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-[var(--foreground-tertiary)]">
                     {checked}/{total}
                   </span>
-                  <span
-                    className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                    aria-hidden="true"
-                  >
-                    ▼
-                  </span>
+                  <ChevronDown
+                    size={20}
+                    className={`text-[var(--gray-2)] transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                  />
                 </div>
               </button>
 
               {isExpanded && (
                 <ul
                   id={`category-${category}`}
-                  className="border-t border-gray-50 bg-gray-50/50 px-4 pb-4 dark:border-gray-700 dark:bg-gray-900/30"
+                  className="bg-[var(--background)] pb-2"
                 >
                   {items.map((item) => {
                     const isChecked = progress.shoppingListChecked.includes(item.name);
                     return (
                       <li key={item.name}>
-                        <label className="flex cursor-pointer items-center gap-3 py-2">
+                        <label className="flex min-h-[44px] cursor-pointer items-center gap-3 px-4 py-2 transition-none active:opacity-80">
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleShoppingItem(item.name)}
-                            className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700"
+                            className="flex-shrink-0"
                           />
                           <span
-                            className={`flex-1 ${
+                            className={`flex-1 text-[15px] ${
                               isChecked
-                                ? 'text-gray-400 line-through'
-                                : 'text-gray-700 dark:text-gray-300'
+                                ? 'text-[var(--foreground-tertiary)] line-through'
+                                : 'text-[var(--foreground)]'
                             }`}
                           >
                             {item.name}
                           </span>
-                          <span className="text-sm text-gray-400">
+                          <span className="text-sm text-[var(--foreground-tertiary)]">
                             {item.amount}
                           </span>
                         </label>

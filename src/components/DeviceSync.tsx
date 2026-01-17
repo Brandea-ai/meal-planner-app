@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { X, Smartphone, Camera, ArrowLeft } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { getDeviceId } from '@/lib/supabase';
@@ -89,43 +90,52 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 dark:bg-gray-800">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
+      <div className="w-full max-w-sm rounded-t-[20px] bg-[var(--background)] p-6 sm:rounded-[20px]">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          {mode !== 'choose' ? (
+            <button
+              onClick={handleBack}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fill-tertiary)] transition-none active:opacity-80"
+              aria-label="Zurück"
+            >
+              <ArrowLeft size={20} className="text-[var(--foreground)]" />
+            </button>
+          ) : (
+            <div className="w-10" />
+          )}
+          <h2 className="text-lg font-semibold text-[var(--foreground)]">
             {mode === 'choose' && 'Geräte verbinden'}
             {mode === 'show' && 'QR-Code zeigen'}
             {mode === 'scan' && 'QR-Code scannen'}
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fill-tertiary)] transition-none active:opacity-80"
             aria-label="Schließen"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X size={20} className="text-[var(--foreground)]" />
           </button>
         </div>
 
         {/* Choose Mode */}
         {mode === 'choose' && (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="space-y-3">
+            <p className="text-center text-sm text-[var(--foreground-secondary)]">
               Verbinde dieses Gerät mit einem anderen, um deine Daten zu synchronisieren.
             </p>
 
             <button
               onClick={handleShowQR}
-              className="flex w-full items-center gap-4 rounded-xl border-2 border-gray-200 p-4 text-left transition-colors hover:border-blue-500 hover:bg-blue-50 dark:border-gray-600 dark:hover:border-blue-500 dark:hover:bg-blue-950/30"
+              className="flex w-full items-center gap-4 rounded-[12px] bg-[var(--fill-tertiary)] p-4 text-left transition-none active:opacity-80"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-2xl dark:bg-blue-900/50">
-                📱
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--system-blue)]">
+                <Smartphone size={24} className="text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900 dark:text-white">QR-Code zeigen</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="font-semibold text-[var(--foreground)]">QR-Code zeigen</p>
+                <p className="text-sm text-[var(--foreground-tertiary)]">
                   Scanne diesen Code mit dem anderen Gerät
                 </p>
               </div>
@@ -133,14 +143,14 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
 
             <button
               onClick={handleScanQR}
-              className="flex w-full items-center gap-4 rounded-xl border-2 border-gray-200 p-4 text-left transition-colors hover:border-blue-500 hover:bg-blue-50 dark:border-gray-600 dark:hover:border-blue-500 dark:hover:bg-blue-950/30"
+              className="flex w-full items-center gap-4 rounded-[12px] bg-[var(--fill-tertiary)] p-4 text-left transition-none active:opacity-80"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 text-2xl dark:bg-green-900/50">
-                📷
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--system-green)]">
+                <Camera size={24} className="text-white" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900 dark:text-white">QR-Code scannen</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="font-semibold text-[var(--foreground)]">QR-Code scannen</p>
+                <p className="text-sm text-[var(--foreground-tertiary)]">
                   Scanne den Code vom anderen Gerät
                 </p>
               </div>
@@ -151,7 +161,7 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
         {/* Show QR Code */}
         {mode === 'show' && (
           <div className="space-y-4">
-            <div className="flex justify-center rounded-xl bg-white p-4">
+            <div className="flex justify-center rounded-[12px] bg-white p-6">
               <QRCodeSVG
                 value={`meal-planner:${deviceId}`}
                 size={200}
@@ -159,15 +169,9 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
                 includeMargin
               />
             </div>
-            <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-center text-sm text-[var(--foreground-secondary)]">
               Scanne diesen QR-Code mit deinem anderen Gerät, um die Daten zu synchronisieren.
             </p>
-            <button
-              onClick={handleBack}
-              className="w-full rounded-xl bg-gray-100 py-3 font-semibold text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-            >
-              Zurück
-            </button>
           </div>
         )}
 
@@ -176,28 +180,21 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
           <div className="space-y-4">
             <div
               id={scannerContainerId}
-              className="overflow-hidden rounded-xl bg-black"
+              className="overflow-hidden rounded-[12px] bg-black"
               style={{ minHeight: 250 }}
             />
 
             {scanError && (
-              <div className="rounded-lg bg-red-100 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-300">
+              <div className="rounded-[10px] bg-[var(--system-red)]/15 p-3 text-sm text-[var(--system-red)]">
                 {scanError}
               </div>
             )}
 
             {isScanning && (
-              <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-center text-sm text-[var(--foreground-secondary)]">
                 Halte die Kamera auf den QR-Code des anderen Geräts
               </p>
             )}
-
-            <button
-              onClick={handleBack}
-              className="w-full rounded-xl bg-gray-100 py-3 font-semibold text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-            >
-              Abbrechen
-            </button>
           </div>
         )}
       </div>

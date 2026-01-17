@@ -1,5 +1,6 @@
 'use client';
 
+import { Check, Clock, Globe, Utensils, ChefHat, Sparkles, StickyNote } from 'lucide-react';
 import { Meal } from '@/types';
 import { useApp } from '@/context/AppContext';
 
@@ -21,42 +22,44 @@ export function MealCard({ meal }: MealCardProps) {
 
   return (
     <article
-      className={`rounded-2xl border-2 transition-all duration-300 ${
+      className={`overflow-hidden rounded-[12px] ${
         isCompleted
-          ? 'border-green-500 bg-green-50 dark:bg-green-950/30'
-          : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+          ? 'bg-[var(--system-green)]/10'
+          : 'bg-[var(--background-secondary)]'
       }`}
       aria-label={`Tag ${meal.day}: ${meal.title}`}
     >
       {/* Header */}
-      <header className="p-4 pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+      <header className="p-4 pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <span className="text-xs font-medium text-[var(--foreground-tertiary)]">
               Tag {meal.day}
             </span>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h2 className="mt-0.5 text-xl font-bold text-[var(--foreground)]">
               {meal.title}
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="mt-0.5 text-sm text-[var(--foreground-secondary)]">
               {meal.subtitle}
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+          <div className="flex items-center gap-1.5 rounded-full bg-[var(--system-orange)]/15 px-2.5 py-1">
+            <Clock size={14} className="text-[var(--system-orange)]" />
+            <span className="text-xs font-medium text-[var(--system-orange)]">
               {meal.prepTime} Min
             </span>
           </div>
         </div>
 
         {/* Cultural Tags */}
-        <div className="mt-2 flex flex-wrap gap-1" role="list" aria-label="Kulturelle Einflüsse">
+        <div className="mt-3 flex flex-wrap gap-1.5" role="list" aria-label="Kulturelle Einflüsse">
           {meal.culturalOrigin.map((origin) => (
             <span
               key={origin}
               role="listitem"
-              className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
+              className="flex items-center gap-1 rounded-full bg-[var(--system-blue)]/10 px-2 py-0.5 text-xs font-medium text-[var(--system-blue)]"
             >
+              <Globe size={10} />
               {origin}
             </span>
           ))}
@@ -64,21 +67,24 @@ export function MealCard({ meal }: MealCardProps) {
       </header>
 
       {/* Ingredients */}
-      <section className="p-4 pt-2" aria-labelledby={`ingredients-${meal.id}`}>
-        <h3 id={`ingredients-${meal.id}`} className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Zutaten
-        </h3>
-        <ul className="grid grid-cols-2 gap-1 text-sm">
+      <section className="px-4 pb-3" aria-labelledby={`ingredients-${meal.id}`}>
+        <div className="flex items-center gap-2">
+          <Utensils size={14} className="text-[var(--foreground-tertiary)]" />
+          <h3 id={`ingredients-${meal.id}`} className="text-sm font-semibold text-[var(--foreground)]">
+            Zutaten
+          </h3>
+        </div>
+        <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
           {meal.ingredients.map((ingredient, idx) => (
             <li
               key={idx}
-              className="flex items-center gap-1 text-gray-600 dark:text-gray-400"
+              className="flex items-baseline gap-1.5 text-sm text-[var(--foreground-secondary)]"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-gray-400" aria-hidden="true" />
-              <span>
+              <span className="h-1 w-1 flex-shrink-0 rounded-full bg-[var(--gray-3)]" aria-hidden="true" />
+              <span className="flex-1">
                 {ingredient.name}
                 {ingredient.amount && (
-                  <span className="text-gray-400"> ({ingredient.amount})</span>
+                  <span className="text-[var(--foreground-tertiary)]"> ({ingredient.amount})</span>
                 )}
               </span>
             </li>
@@ -88,40 +94,45 @@ export function MealCard({ meal }: MealCardProps) {
 
       {/* Protein Options (for flexible meals) */}
       {meal.proteinOptions && meal.proteinOptions.length > 0 && (
-        <section className="border-t border-gray-100 p-4 pt-3 dark:border-gray-700">
-          <p className="text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-300">Protein-Optionen: </span>
-            <span className="text-gray-600 dark:text-gray-400">
-              {meal.proteinOptions.join(' / ')}
-            </span>
+        <section className="border-t border-[var(--separator)] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <ChefHat size={14} className="text-[var(--system-purple)]" />
+            <span className="text-sm font-medium text-[var(--foreground)]">Protein-Optionen</span>
+          </div>
+          <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
+            {meal.proteinOptions.join(' / ')}
           </p>
         </section>
       )}
 
       {/* Side Dish */}
       {meal.sideDish && (
-        <section className="border-t border-gray-100 p-4 pt-3 dark:border-gray-700">
-          <p className="text-sm">
-            <span className="font-medium text-gray-700 dark:text-gray-300">Beilage: </span>
-            <span className="text-gray-600 dark:text-gray-400">{meal.sideDish}</span>
-          </p>
+        <section className="border-t border-[var(--separator)] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Utensils size={14} className="text-[var(--system-teal)]" />
+            <span className="text-sm font-medium text-[var(--foreground)]">Beilage</span>
+          </div>
+          <p className="mt-1 text-sm text-[var(--foreground-secondary)]">{meal.sideDish}</p>
         </section>
       )}
 
       {/* Benefit */}
-      <section className="border-t border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
-        <p className="text-sm italic text-gray-600 dark:text-gray-400">
-          {meal.benefit}
-        </p>
+      <section className="border-t border-[var(--separator)] bg-[var(--fill-quaternary)] px-4 py-3">
+        <div className="flex items-start gap-2">
+          <Sparkles size={14} className="mt-0.5 flex-shrink-0 text-[var(--system-yellow)]" />
+          <p className="text-sm text-[var(--foreground-secondary)]">
+            {meal.benefit}
+          </p>
+        </div>
       </section>
 
       {/* Tags */}
-      <section className="px-4 py-2" aria-label="Tags">
-        <div className="flex flex-wrap gap-1">
+      <section className="px-4 py-3" aria-label="Tags">
+        <div className="flex flex-wrap gap-1.5">
           {meal.tags.map((tag) => (
             <span
               key={tag}
-              className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+              className="rounded-full bg-[var(--fill-secondary)] px-2 py-0.5 text-xs text-[var(--foreground-secondary)]"
             >
               #{tag}
             </span>
@@ -129,18 +140,27 @@ export function MealCard({ meal }: MealCardProps) {
         </div>
       </section>
 
+      {/* Note Section Placeholder - Will be filled by MealNoteEditor */}
+      <section className="border-t border-[var(--separator)] px-4 py-3">
+        <div className="flex items-center gap-2 text-[var(--foreground-tertiary)]">
+          <StickyNote size={14} />
+          <span className="text-sm">Notiz hinzufügen...</span>
+        </div>
+      </section>
+
       {/* Complete Button */}
-      <footer className="p-4 pt-2">
+      <footer className="p-4 pt-0">
         <button
           onClick={handleToggleComplete}
-          className={`w-full rounded-xl py-3 font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          className={`flex w-full items-center justify-center gap-2 rounded-[12px] py-3.5 font-semibold transition-none active:opacity-80 ${
             isCompleted
-              ? 'bg-green-500 text-white hover:bg-green-600 focus:ring-green-500'
-              : 'bg-gray-900 text-white hover:bg-gray-800 focus:ring-gray-500 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100'
+              ? 'bg-[var(--system-green)] text-white'
+              : 'bg-[var(--foreground)] text-[var(--background)]'
           }`}
           aria-pressed={isCompleted}
         >
-          {isCompleted ? '✓ Erledigt' : 'Als erledigt markieren'}
+          {isCompleted && <Check size={18} strokeWidth={3} />}
+          {isCompleted ? 'Erledigt' : 'Als erledigt markieren'}
         </button>
       </footer>
     </article>

@@ -1,44 +1,54 @@
 'use client';
 
+import { Calendar, ShoppingCart, Settings, BarChart3 } from 'lucide-react';
+
 interface NavigationProps {
-  activeTab: 'plan' | 'shopping' | 'settings';
-  onTabChange: (tab: 'plan' | 'shopping' | 'settings') => void;
+  activeTab: 'plan' | 'shopping' | 'statistics' | 'settings';
+  onTabChange: (tab: 'plan' | 'shopping' | 'statistics' | 'settings') => void;
 }
 
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const tabs = [
-    { id: 'plan' as const, label: 'Wochenplan', icon: '📅' },
-    { id: 'shopping' as const, label: 'Einkaufen', icon: '🛒' },
-    { id: 'settings' as const, label: 'Einstellungen', icon: '⚙️' },
+    { id: 'plan' as const, label: 'Wochenplan', icon: Calendar },
+    { id: 'shopping' as const, label: 'Einkaufen', icon: ShoppingCart },
+    { id: 'statistics' as const, label: 'Statistik', icon: BarChart3 },
+    { id: 'settings' as const, label: 'Einstellungen', icon: Settings },
   ];
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/80 backdrop-blur-lg dark:border-gray-700 dark:bg-gray-900/80"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--separator)] bg-[var(--background)]/80 backdrop-blur-xl"
       role="navigation"
       aria-label="Hauptnavigation"
     >
       <div className="mx-auto flex max-w-lg justify-around">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`flex flex-1 flex-col items-center gap-1 py-3 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
-              activeTab === tab.id
-                ? 'text-blue-600 dark:text-blue-400'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            }`}
-            aria-current={activeTab === tab.id ? 'page' : undefined}
-          >
-            <span className="text-xl" aria-hidden="true">
-              {tab.icon}
-            </span>
-            <span className="text-xs font-medium">{tab.label}</span>
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`flex min-h-[49px] flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-none active:opacity-80 ${
+                isActive
+                  ? 'text-[var(--system-blue)]'
+                  : 'text-[var(--gray-1)]'
+              }`}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <Icon
+                size={24}
+                strokeWidth={isActive ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <span className="text-[10px] font-medium">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
       {/* Safe area for iOS */}
-      <div className="h-safe-bottom bg-white dark:bg-gray-900" />
+      <div className="h-safe-bottom bg-[var(--background)]" />
     </nav>
   );
 }

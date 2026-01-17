@@ -1,5 +1,6 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 
 interface DaySelectorProps {
@@ -13,7 +14,7 @@ export function DaySelector({ onDaySelect, selectedDay }: DaySelectorProps) {
 
   return (
     <nav aria-label="Tagesauswahl" className="w-full">
-      <div className="flex justify-between gap-1 sm:gap-2">
+      <div className="flex justify-between gap-1.5">
         {days.map((day) => {
           const isCompleted = progress.completedDays.includes(day);
           const isSelected = selectedDay === day;
@@ -22,24 +23,26 @@ export function DaySelector({ onDaySelect, selectedDay }: DaySelectorProps) {
             <button
               key={day}
               onClick={() => onDaySelect(day)}
-              className={`relative flex h-12 w-12 flex-col items-center justify-center rounded-xl text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:h-14 sm:w-14 ${
+              className={`relative flex min-h-[56px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-[12px] text-sm font-medium transition-none active:opacity-80 ${
                 isSelected
-                  ? 'bg-blue-600 text-white shadow-lg scale-105'
+                  ? 'bg-[var(--system-blue)] text-white'
                   : isCompleted
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                  ? 'bg-[var(--system-green)]/15 text-[var(--system-green)]'
+                  : 'bg-[var(--fill-tertiary)] text-[var(--foreground-secondary)]'
               }`}
               aria-label={`Tag ${day}${isCompleted ? ', erledigt' : ''}${isSelected ? ', ausgewählt' : ''}`}
               aria-current={isSelected ? 'true' : undefined}
             >
-              <span className="text-xs opacity-70">Tag</span>
-              <span className="text-lg font-bold">{day}</span>
+              <span className={`text-[10px] ${isSelected ? 'opacity-80' : 'opacity-60'}`}>
+                Tag
+              </span>
+              <span className="text-lg font-semibold">{day}</span>
               {isCompleted && !isSelected && (
                 <span
-                  className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-[10px] text-white"
+                  className="absolute -right-0.5 -top-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[var(--system-green)]"
                   aria-hidden="true"
                 >
-                  ✓
+                  <Check size={12} strokeWidth={3} className="text-white" />
                 </span>
               )}
             </button>

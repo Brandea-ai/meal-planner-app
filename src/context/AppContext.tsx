@@ -9,6 +9,8 @@ const defaultPreferences: UserPreferences = {
   mealPrepEnabled: false,
   dietaryRestrictions: [],
   servings: 2,
+  shoppingListFilter: 'all',
+  autoSyncShoppingFilter: true,
 };
 
 interface AppContextType {

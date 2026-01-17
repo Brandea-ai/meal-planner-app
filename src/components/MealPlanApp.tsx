@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { breakfastMeals, dinnerMeals, mealTypeLabels } from '@/data/meals';
 import { MealType } from '@/types';
@@ -9,10 +10,11 @@ import { DaySelector } from './DaySelector';
 import { ShoppingList } from './ShoppingList';
 import { Settings } from './Settings';
 import { Navigation } from './Navigation';
+import { Statistics } from './statistics/Statistics';
 
 export function MealPlanApp() {
-  const { progress, isLoaded, startPlan } = useApp();
-  const [activeTab, setActiveTab] = useState<'plan' | 'shopping' | 'settings'>('plan');
+  const { progress, isLoaded, startPlan, updatePreferences } = useApp();
+  const [activeTab, setActiveTab] = useState<'plan' | 'shopping' | 'statistics' | 'settings'>('plan');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [mealType, setMealType] = useState<MealType>('breakfast');
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -37,6 +39,13 @@ export function MealPlanApp() {
       startPlan();
     }
   }, [isLoaded, progress.startDate, startPlan]);
+
+  // Auto-sync shopping list filter when meal type changes
+  useEffect(() => {
+    if (progress.preferences.autoSyncShoppingFilter && activeTab === 'plan') {
+      updatePreferences({ shoppingListFilter: mealType });
+    }
+  }, [mealType, progress.preferences.autoSyncShoppingFilter, activeTab, updatePreferences]);
 
   const handleSwipe = useCallback((startX: number, endX: number) => {
     const distance = startX - endX;
@@ -88,46 +97,48 @@ export function MealPlanApp() {
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--system-blue)] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-900">
+    <div className="min-h-screen bg-[var(--background)] pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-lg dark:border-gray-700 dark:bg-gray-900/80">
+      <header className="sticky top-0 z-40 border-b border-[var(--separator)] bg-[var(--background)]/80 backdrop-blur-xl">
         <div className="mx-auto max-w-lg px-4 py-3">
-          <h1 className="text-center text-xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-center text-lg font-semibold text-[var(--foreground)]">
             7-Tage Mahlzeitenplan
           </h1>
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-            Albanisch - Deutsch - Französisch
+          <p className="text-center text-xs text-[var(--foreground-tertiary)]">
+            Albanisch - Deutsch - Franzosisch
           </p>
 
-          {/* Meal Type Toggle */}
+          {/* Meal Type Toggle - Segmented Control */}
           {activeTab === 'plan' && (
-            <div className="mt-3 flex justify-center">
-              <div className="inline-flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+            <div className="mt-3">
+              <div className="flex rounded-[10px] bg-[var(--fill-tertiary)] p-0.5">
                 <button
                   onClick={() => setMealType('breakfast')}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-4 py-2 text-sm font-medium transition-none active:opacity-80 ${
                     mealType === 'breakfast'
-                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                      ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
+                      : 'text-[var(--foreground-secondary)]'
                   }`}
                 >
+                  <Sun size={16} />
                   {mealTypeLabels.breakfast}
                 </button>
                 <button
                   onClick={() => setMealType('dinner')}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-4 py-2 text-sm font-medium transition-none active:opacity-80 ${
                     mealType === 'dinner'
-                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                      ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
+                      : 'text-[var(--foreground-secondary)]'
                   }`}
                 >
+                  <Moon size={16} />
                   {mealTypeLabels.dinner}
                 </button>
               </div>
@@ -148,7 +159,7 @@ export function MealPlanApp() {
             <DaySelector selectedDay={displayDay} onDaySelect={setSelectedDay} />
 
             {/* Swipe hint */}
-            <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+            <p className="text-center text-xs text-[var(--foreground-tertiary)]">
               Wische oder nutze Pfeiltasten zum Navigieren
             </p>
 
@@ -161,6 +172,8 @@ export function MealPlanApp() {
         )}
 
         {activeTab === 'shopping' && <ShoppingList />}
+
+        {activeTab === 'statistics' && <Statistics />}
 
         {activeTab === 'settings' && <Settings />}
       </main>

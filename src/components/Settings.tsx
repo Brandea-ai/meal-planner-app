@@ -1,10 +1,39 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  QrCode,
+  Cloud,
+  ChevronRight,
+  RotateCcw,
+  Users,
+  Timer,
+  ChefHat,
+  Dumbbell,
+  Leaf,
+  Wheat,
+  Droplets,
+  Bean,
+  Fish,
+  Beef,
+  Scale,
+  RefreshCw,
+} from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { ProgressRing } from './ProgressRing';
 import { DeviceSync } from './DeviceSync';
-import { principles } from '@/data/meals';
+
+// Principles with Lucide icons
+const principles = [
+  { icon: Dumbbell, title: 'Protein-reich', description: 'Eier, Joghurt, Fisch, Fleisch' },
+  { icon: Leaf, title: 'Gemüse/Obst täglich', description: 'Farben auf dem Teller' },
+  { icon: Wheat, title: 'Vollkorn-Standard', description: 'Bulgur, Naturreis, Pasta' },
+  { icon: Droplets, title: 'Bewusste Fette', description: 'Olivenöl, Avocado, Nüsse' },
+  { icon: Bean, title: 'Hülsenfrüchte 1x/Woche', description: 'Kichererbsen, Edamame' },
+  { icon: Fish, title: 'Fisch 1x/Woche', description: 'Omega-3 für Gehirn & Herz' },
+  { icon: Beef, title: 'Rotes Fleisch max 1x', description: 'Qualität vor Quantität' },
+  { icon: Scale, title: 'Portions-Rule', description: '1/2 Gemüse · 1/4 Protein · 1/4 Beilage' },
+];
 
 export function Settings() {
   const { progress, syncStatus, deviceId, updatePreferences, resetProgress, switchDevice } = useApp();
@@ -37,183 +66,233 @@ export function Settings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Success Message */}
       {syncSuccess && (
-        <div className="rounded-xl bg-green-100 p-4 text-center text-green-800 dark:bg-green-900/30 dark:text-green-200">
+        <div className="rounded-[12px] bg-[var(--system-green)]/15 p-4 text-center text-[var(--system-green)]">
           Geräte erfolgreich verbunden!
         </div>
       )}
 
       {/* Progress Section */}
-      <section className="rounded-2xl border-2 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="mb-4 text-center text-xl font-bold text-gray-900 dark:text-white">
-          Dein Fortschritt
-        </h2>
-        <ProgressRing />
-        {progress.startDate && (
-          <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-            Gestartet am{' '}
-            {new Date(progress.startDate).toLocaleDateString('de-DE', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
-        )}
+      <section className="overflow-hidden rounded-[12px] bg-[var(--background-secondary)]">
+        <div className="p-6">
+          <h2 className="mb-4 text-center text-lg font-semibold text-[var(--foreground)]">
+            Dein Fortschritt
+          </h2>
+          <ProgressRing />
+          {progress.startDate && (
+            <p className="mt-4 text-center text-sm text-[var(--foreground-tertiary)]">
+              Gestartet am{' '}
+              {new Date(progress.startDate).toLocaleDateString('de-DE', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </p>
+          )}
+        </div>
       </section>
 
       {/* Device Sync Section */}
-      <section className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 dark:border-blue-900/50 dark:bg-blue-950/30">
-        <h2 className="mb-2 text-xl font-bold text-blue-900 dark:text-blue-100">
-          Geräte verbinden
-        </h2>
-        <p className="mb-4 text-sm text-blue-700 dark:text-blue-300">
-          Verbinde dein Handy mit deinem Laptop, um deine Daten zu synchronisieren.
-        </p>
+      <section className="overflow-hidden rounded-[12px] bg-[var(--system-blue)]/10">
         <button
           onClick={() => setShowDeviceSync(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="flex min-h-[44px] w-full items-center justify-between p-4 transition-none active:opacity-80"
         >
-          <span className="text-xl">📱</span>
-          QR-Code Sync
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-blue)]">
+              <QrCode size={20} className="text-white" />
+            </div>
+            <div className="text-left">
+              <span className="block font-semibold text-[var(--foreground)]">
+                Geräte verbinden
+              </span>
+              <span className="text-sm text-[var(--foreground-secondary)]">
+                QR-Code Sync
+              </span>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-[var(--gray-2)]" />
         </button>
       </section>
 
-      {/* Sync Status Section */}
-      <section className="rounded-2xl border-2 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          Cloud-Sync
-        </h2>
-        <div className="flex items-center gap-3">
-          <div className={`h-3 w-3 rounded-full ${
-            syncStatus === 'synced' ? 'bg-green-500' :
-            syncStatus === 'syncing' ? 'bg-yellow-500 animate-pulse' :
-            syncStatus === 'error' ? 'bg-red-500' :
-            'bg-gray-400'
-          }`} />
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {syncStatus === 'synced' && 'Synchronisiert'}
-            {syncStatus === 'syncing' && 'Synchronisiere...'}
-            {syncStatus === 'error' && 'Sync-Fehler'}
-            {syncStatus === 'offline' && 'Offline-Modus'}
-            {!syncStatus && 'Verbinde...'}
-          </span>
+      {/* Cloud Sync Status */}
+      <section className="overflow-hidden rounded-[12px] bg-[var(--background-secondary)]">
+        <div className="flex min-h-[44px] items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fill-secondary)]">
+              <Cloud size={20} className="text-[var(--foreground-secondary)]" />
+            </div>
+            <div>
+              <span className="block font-semibold text-[var(--foreground)]">
+                Cloud-Sync
+              </span>
+              {deviceId && (
+                <span className="font-mono text-xs text-[var(--foreground-tertiary)]">
+                  ID: {deviceId.slice(0, 8)}...
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className={`h-2.5 w-2.5 rounded-full ${
+              syncStatus === 'synced' ? 'bg-[var(--system-green)]' :
+              syncStatus === 'syncing' ? 'bg-[var(--system-yellow)] animate-pulse' :
+              syncStatus === 'error' ? 'bg-[var(--system-red)]' :
+              'bg-[var(--gray-2)]'
+            }`} />
+            <span className="text-sm text-[var(--foreground-secondary)]">
+              {syncStatus === 'synced' && 'Synchronisiert'}
+              {syncStatus === 'syncing' && 'Synchronisiere...'}
+              {syncStatus === 'error' && 'Sync-Fehler'}
+              {syncStatus === 'offline' && 'Offline'}
+              {!syncStatus && 'Verbinde...'}
+            </span>
+          </div>
         </div>
-        {deviceId && (
-          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500 font-mono">
-            Geräte-ID: {deviceId.slice(0, 8)}...
-          </p>
-        )}
       </section>
 
       {/* Preferences Section */}
-      <section className="rounded-2xl border-2 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          Einstellungen
-        </h2>
+      <section className="overflow-hidden rounded-[12px] bg-[var(--background-secondary)]">
+        <div className="p-4 pb-2">
+          <h2 className="text-lg font-semibold text-[var(--foreground)]">
+            Einstellungen
+          </h2>
+        </div>
 
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="servings" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Portionen
-            </label>
-            <select
-              id="servings"
-              value={progress.preferences.servings}
-              onChange={handleServingsChange}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value={1}>1 Person</option>
-              <option value={2}>2 Personen</option>
-              <option value={3}>3 Personen</option>
-              <option value={4}>4 Personen</option>
-            </select>
+        {/* Portionen */}
+        <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Users size={20} className="text-[var(--system-blue)]" />
+            <span className="text-[var(--foreground)]">Portionen</span>
           </div>
+          <select
+            value={progress.preferences.servings}
+            onChange={handleServingsChange}
+            className="rounded-[8px] border-0 bg-[var(--fill-tertiary)] px-3 py-1.5 text-sm text-[var(--foreground)] focus:outline-none"
+          >
+            <option value={1}>1 Person</option>
+            <option value={2}>2 Personen</option>
+            <option value={3}>3 Personen</option>
+            <option value={4}>4 Personen</option>
+          </select>
+        </div>
 
-          <div>
-            <label htmlFor="prepTime" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Zubereitungszeit
-            </label>
-            <select
-              id="prepTime"
-              value={progress.preferences.prepTimePreference}
-              onChange={handlePrepTimeChange}
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="quick">Schnell (unter 10 Min)</option>
-              <option value="normal">Normal (10-15 Min)</option>
-              <option value="extended">Ausführlich (15+ Min)</option>
-            </select>
+        <div className="inset-separator" />
+
+        {/* Zubereitungszeit */}
+        <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Timer size={20} className="text-[var(--system-orange)]" />
+            <span className="text-[var(--foreground)]">Zubereitungszeit</span>
           </div>
+          <select
+            value={progress.preferences.prepTimePreference}
+            onChange={handlePrepTimeChange}
+            className="rounded-[8px] border-0 bg-[var(--fill-tertiary)] px-3 py-1.5 text-sm text-[var(--foreground)] focus:outline-none"
+          >
+            <option value="quick">Schnell</option>
+            <option value="normal">Normal</option>
+            <option value="extended">Ausführlich</option>
+          </select>
+        </div>
 
-          <div className="flex items-center justify-between">
+        <div className="inset-separator" />
+
+        {/* Meal Prep Toggle */}
+        <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <ChefHat size={20} className="text-[var(--system-purple)]" />
             <div>
-              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Meal Prep aktivieren
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="block text-[var(--foreground)]">Meal Prep</span>
+              <span className="text-xs text-[var(--foreground-tertiary)]">
                 Vorbereitung am Wochenende
               </span>
             </div>
-            <button
-              onClick={handleMealPrepToggle}
-              className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                progress.preferences.mealPrepEnabled
-                  ? 'bg-blue-600'
-                  : 'bg-gray-200 dark:bg-gray-600'
-              }`}
-              role="switch"
-              aria-checked={progress.preferences.mealPrepEnabled}
-            >
-              <span
-                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                  progress.preferences.mealPrepEnabled ? 'translate-x-5' : ''
-                }`}
-              />
-            </button>
           </div>
+          <button
+            onClick={handleMealPrepToggle}
+            className={`toggle-switch ${progress.preferences.mealPrepEnabled ? 'active' : ''}`}
+            role="switch"
+            aria-checked={progress.preferences.mealPrepEnabled}
+          >
+            <span className="toggle-switch-knob" />
+          </button>
+        </div>
+
+        <div className="inset-separator" />
+
+        {/* Auto-Sync Shopping Filter Toggle */}
+        <div className="flex min-h-[44px] items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <RefreshCw size={20} className="text-[var(--system-teal)]" />
+            <div>
+              <span className="block text-[var(--foreground)]">Auto-Sync Filter</span>
+              <span className="text-xs text-[var(--foreground-tertiary)]">
+                Einkaufsliste folgt Mahlzeit-Tab
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => updatePreferences({ autoSyncShoppingFilter: !progress.preferences.autoSyncShoppingFilter })}
+            className={`toggle-switch ${progress.preferences.autoSyncShoppingFilter ? 'active' : ''}`}
+            role="switch"
+            aria-checked={progress.preferences.autoSyncShoppingFilter || false}
+          >
+            <span className="toggle-switch-knob" />
+          </button>
         </div>
       </section>
 
       {/* Principles Section */}
-      <section className="rounded-2xl border-2 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-          Unsere Prinzipien
-        </h2>
-        <ul className="grid grid-cols-2 gap-3">
-          {principles.map((principle) => (
-            <li
-              key={principle.title}
-              className="rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50"
-            >
-              <span className="text-2xl" aria-hidden="true">
-                {principle.icon}
-              </span>
-              <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-                {principle.title}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {principle.description}
-              </p>
-            </li>
-          ))}
-        </ul>
+      <section className="overflow-hidden rounded-[12px] bg-[var(--background-secondary)]">
+        <div className="p-4 pb-2">
+          <h2 className="text-lg font-semibold text-[var(--foreground)]">
+            Unsere Prinzipien
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2 p-4 pt-2">
+          {principles.map((principle) => {
+            const IconComponent = principle.icon;
+            return (
+              <div
+                key={principle.title}
+                className="rounded-[10px] bg-[var(--fill-tertiary)] p-3"
+              >
+                <IconComponent size={20} className="text-[var(--system-blue)]" />
+                <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">
+                  {principle.title}
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--foreground-tertiary)]">
+                  {principle.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* Reset Section */}
-      <section className="rounded-2xl border-2 border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/30">
-        <h2 className="mb-2 text-lg font-bold text-red-800 dark:text-red-200">
-          Fortschritt zurücksetzen
-        </h2>
-        <p className="mb-4 text-sm text-red-700 dark:text-red-300">
-          Dies löscht deinen gesamten Fortschritt und alle Einstellungen.
-        </p>
+      <section className="overflow-hidden rounded-[12px] bg-[var(--system-red)]/10">
         <button
           onClick={handleReset}
-          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          className="flex min-h-[44px] w-full items-center justify-between p-4 transition-none active:opacity-80"
         >
-          Zurücksetzen
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-red)]">
+              <RotateCcw size={20} className="text-white" />
+            </div>
+            <div className="text-left">
+              <span className="block font-semibold text-[var(--system-red)]">
+                Fortschritt zurücksetzen
+              </span>
+              <span className="text-sm text-[var(--foreground-secondary)]">
+                Löscht alle Daten
+              </span>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-[var(--gray-2)]" />
         </button>
       </section>
 

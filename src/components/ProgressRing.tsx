@@ -20,21 +20,20 @@ export function ProgressRing() {
           cx="64"
           cy="64"
           r="45"
-          stroke="currentColor"
+          stroke="var(--fill-secondary)"
           strokeWidth="8"
           fill="none"
-          className="text-gray-200 dark:text-gray-700"
         />
         {/* Progress circle */}
         <circle
           cx="64"
           cy="64"
           r="45"
-          stroke="currentColor"
+          stroke="var(--system-green)"
           strokeWidth="8"
           fill="none"
           strokeLinecap="round"
-          className="text-green-500 transition-all duration-500"
+          className="transition-all duration-500"
           style={{
             strokeDasharray: circumference,
             strokeDashoffset,
@@ -42,15 +41,15 @@ export function ProgressRing() {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-gray-900 dark:text-white">
+        <span className="text-3xl font-bold text-[var(--foreground)]">
           {percentage}%
         </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="text-xs text-[var(--foreground-tertiary)]">
           abgeschlossen
         </span>
       </div>
       <p
-        className="mt-2 text-sm text-gray-600 dark:text-gray-400"
+        className="mt-2 text-sm text-[var(--foreground-secondary)]"
         role="status"
         aria-live="polite"
       >
