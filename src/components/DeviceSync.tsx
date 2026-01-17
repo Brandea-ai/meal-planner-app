@@ -14,10 +14,11 @@ interface DeviceSyncProps {
 }
 
 export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
-  const [mode, setMode] = useState<'choose' | 'show' | 'scan' | 'info'>('choose');
+  const [mode, setMode] = useState<'choose' | 'show' | 'scan' | 'info' | 'success'>('choose');
   const [deviceId, setDeviceIdState] = useState<string>('');
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [scannedDeviceId, setScannedDeviceId] = useState<string>('');
   const scannerRef = useRef<Html5QrcodeType | null>(null);
   const isScannerRunning = useRef(false); // Track if scanner is actually running
   const scannerContainerId = 'qr-scanner-container';
@@ -78,14 +79,17 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
         (decodedText) => {
           // QR Code successfully scanned
           if (decodedText.startsWith('meal-planner:')) {
-            const scannedDeviceId = decodedText.replace('meal-planner:', '');
+            const newDeviceId = decodedText.replace('meal-planner:', '');
             isScannerRunning.current = false;
+            setScannedDeviceId(newDeviceId);
             html5QrCode.stop().then(() => {
               scannerRef.current = null;
-              onSync(scannedDeviceId);
+              setIsScanning(false);
+              setMode('success');
             }).catch(() => {
               scannerRef.current = null;
-              onSync(scannedDeviceId);
+              setIsScanning(false);
+              setMode('success');
             });
           } else {
             setScanError('Ungültiger QR-Code. Bitte scanne einen gültigen Meal-Planner QR-Code.');
@@ -165,6 +169,7 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
             {mode === 'show' && 'QR-Code zeigen'}
             {mode === 'scan' && 'QR-Code scannen'}
             {mode === 'info' && 'So funktioniert\'s'}
+            {mode === 'success' && 'Erfolgreich!'}
           </h2>
           <button
             onClick={onClose}
@@ -305,6 +310,56 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
               className="w-full rounded-[12px] bg-[var(--system-blue)] py-3.5 font-semibold text-white transition-none active:opacity-80"
             >
               Verstanden
+            </button>
+          </div>
+        )}
+
+        {/* Success Screen */}
+        {mode === 'success' && (
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--system-green)]/15">
+                <CheckCircle2 size={48} className="text-[var(--system-green)]" />
+              </div>
+            </div>
+
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-[var(--foreground)]">
+                QR-Code erkannt!
+              </h3>
+              <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
+                Du wirst mit dem anderen Gerät verbunden. Deine Daten werden synchronisiert.
+              </p>
+              {scannedDeviceId && (
+                <p className="mt-2 font-mono text-xs text-[var(--foreground-tertiary)]">
+                  Geräte-ID: {scannedDeviceId.slice(0, 8)}...
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-[10px] bg-[var(--system-orange)]/15 p-3">
+              <p className="text-sm text-[var(--system-orange)]">
+                <strong>Hinweis:</strong> Nach dem Verbinden werden die Daten des anderen Geräts übernommen. Deine aktuellen lokalen Daten werden ersetzt.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                onSync(scannedDeviceId);
+              }}
+              className="w-full rounded-[12px] bg-[var(--system-green)] py-3.5 font-semibold text-white transition-none active:opacity-80"
+            >
+              Jetzt verbinden
+            </button>
+
+            <button
+              onClick={() => {
+                setScannedDeviceId('');
+                setMode('choose');
+              }}
+              className="w-full rounded-[12px] bg-[var(--fill-tertiary)] py-3 text-sm font-medium text-[var(--foreground)] transition-none active:opacity-80"
+            >
+              Abbrechen
             </button>
           </div>
         )}

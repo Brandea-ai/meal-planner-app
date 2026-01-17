@@ -55,9 +55,9 @@ export function useCloudSync(): CloudSyncReturn {
         .from('user_progress')
         .select('*')
         .eq('device_id', deviceId)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid 406 error when no row exists
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.warn('Supabase fetch error:', error);
         setSyncStatus('error');
       }
