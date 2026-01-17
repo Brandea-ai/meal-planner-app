@@ -19,6 +19,7 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const scannerRef = useRef<Html5QrcodeType | null>(null);
+  const isScannerRunning = useRef(false); // Track if scanner is actually running
   const scannerContainerId = 'qr-scanner-container';
 
   // Get device ID on client side only (avoids hydration mismatch)
@@ -26,12 +27,23 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
     setDeviceIdState(getDeviceId());
   }, []);
 
+  // Safe scanner stop function
+  const safeStopScanner = async () => {
+    if (scannerRef.current && isScannerRunning.current) {
+      try {
+        await scannerRef.current.stop();
+      } catch {
+        // Silently ignore - scanner might already be stopped
+      }
+      isScannerRunning.current = false;
+    }
+    scannerRef.current = null;
+  };
+
   useEffect(() => {
     // Cleanup scanner on unmount
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
-      }
+      safeStopScanner();
     };
   }, []);
 
@@ -51,6 +63,9 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
         return;
       }
 
+      // Stop any existing scanner first
+      await safeStopScanner();
+
       const html5QrCode = new Html5Qrcode(scannerContainerId);
       scannerRef.current = html5QrCode;
 
@@ -64,10 +79,12 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
           // QR Code successfully scanned
           if (decodedText.startsWith('meal-planner:')) {
             const scannedDeviceId = decodedText.replace('meal-planner:', '');
+            isScannerRunning.current = false;
             html5QrCode.stop().then(() => {
+              scannerRef.current = null;
               onSync(scannedDeviceId);
             }).catch(() => {
-              // Ignore stop errors
+              scannerRef.current = null;
               onSync(scannedDeviceId);
             });
           } else {
@@ -78,8 +95,14 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
           // Ignore scan errors (happens on every frame without QR code)
         }
       );
+
+      // Mark scanner as running AFTER successful start
+      isScannerRunning.current = true;
     } catch (err) {
       console.error('Scanner error:', err);
+      isScannerRunning.current = false;
+      scannerRef.current = null;
+
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
 
       if (errorMessage.includes('Permission') || errorMessage.includes('NotAllowed')) {
@@ -94,15 +117,7 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
   };
 
   const stopScanner = async () => {
-    if (scannerRef.current) {
-      try {
-        await scannerRef.current.stop();
-      } catch (e) {
-        // Ignore stop errors (scanner might already be stopped)
-        console.warn('Scanner stop warning:', e);
-      }
-      scannerRef.current = null;
-    }
+    await safeStopScanner();
     setIsScanning(false);
   };
 
