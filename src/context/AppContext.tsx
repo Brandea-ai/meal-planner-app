@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { UserProgress, UserPreferences } from '@/types';
-import { shoppingList } from '@/data/meals';
 
 const defaultPreferences: UserPreferences = {
   prepTimePreference: 'normal',

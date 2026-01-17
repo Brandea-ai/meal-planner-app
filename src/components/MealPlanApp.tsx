@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { meals } from '@/data/meals';
 import { MealCard } from './MealCard';
@@ -12,74 +12,80 @@ import { Navigation } from './Navigation';
 export function MealPlanApp() {
   const { progress, isLoaded, startPlan } = useApp();
   const [activeTab, setActiveTab] = useState<'plan' | 'shopping' | 'settings'>('plan');
-  const [selectedDay, setSelectedDay] = useState(1);
+  const [selectedDay, setSelectedDay] = useState(() => progress.currentDay || 1);
   const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const hasInitialized = useRef(false);
 
   // Minimum swipe distance
   const minSwipeDistance = 50;
 
+  // Initialize selected day from progress (only once)
   useEffect(() => {
-    if (isLoaded && progress.currentDay) {
-      setSelectedDay(progress.currentDay);
+    if (isLoaded && !hasInitialized.current && progress.currentDay) {
+      hasInitialized.current = true;
+      // Use a ref to track if we need to update
+      const timer = setTimeout(() => {
+        setSelectedDay(progress.currentDay);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [isLoaded, progress.currentDay]);
 
+  // Auto-start plan
   useEffect(() => {
     if (isLoaded && !progress.startDate) {
       startPlan();
     }
   }, [isLoaded, progress.startDate, startPlan]);
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = useCallback(() => {
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
+  const handleSwipe = useCallback((startX: number, endX: number) => {
+    const distance = startX - endX;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
     if (activeTab === 'plan') {
-      if (isLeftSwipe && selectedDay < 7) {
-        setSelectedDay((prev) => prev + 1);
+      if (isLeftSwipe) {
+        setSelectedDay((prev) => Math.min(prev + 1, 7));
       }
-      if (isRightSwipe && selectedDay > 1) {
-        setSelectedDay((prev) => prev - 1);
+      if (isRightSwipe) {
+        setSelectedDay((prev) => Math.max(prev - 1, 1));
       }
     }
-  }, [touchStart, touchEnd, activeTab, selectedDay]);
+  }, [activeTab]);
 
-  useEffect(() => {
-    onTouchEnd();
-  }, [touchEnd, onTouchEnd]);
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  }, []);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const endX = e.changedTouches[0].clientX;
+    handleSwipe(touchStart, endX);
+    setTouchStart(null);
+  }, [touchStart, handleSwipe]);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab === 'plan') {
-        if (e.key === 'ArrowRight' && selectedDay < 7) {
-          setSelectedDay((prev) => prev + 1);
+        if (e.key === 'ArrowRight') {
+          setSelectedDay((prev) => Math.min(prev + 1, 7));
         }
-        if (e.key === 'ArrowLeft' && selectedDay > 1) {
-          setSelectedDay((prev) => prev - 1);
+        if (e.key === 'ArrowLeft') {
+          setSelectedDay((prev) => Math.max(prev - 1, 1));
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, selectedDay]);
+  }, [activeTab]);
 
-  const selectedMeal = meals.find((m) => m.day === selectedDay);
+  const selectedMeal = useMemo(() =>
+    meals.find((m) => m.day === selectedDay),
+    [selectedDay]
+  );
 
   if (!isLoaded) {
     return (
@@ -108,7 +114,7 @@ export function MealPlanApp() {
         ref={contentRef}
         className="mx-auto max-w-lg px-4 py-4"
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         {activeTab === 'plan' && (
           <div className="space-y-4">
