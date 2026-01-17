@@ -86,6 +86,18 @@ export function MealCard({ meal }: MealCardProps) {
         </ul>
       </section>
 
+      {/* Protein Options (for flexible meals) */}
+      {meal.proteinOptions && meal.proteinOptions.length > 0 && (
+        <section className="border-t border-gray-100 p-4 pt-3 dark:border-gray-700">
+          <p className="text-sm">
+            <span className="font-medium text-gray-700 dark:text-gray-300">Protein-Optionen: </span>
+            <span className="text-gray-600 dark:text-gray-400">
+              {meal.proteinOptions.join(' / ')}
+            </span>
+          </p>
+        </section>
+      )}
+
       {/* Side Dish */}
       {meal.sideDish && (
         <section className="border-t border-gray-100 p-4 pt-3 dark:border-gray-700">

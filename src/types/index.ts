@@ -1,12 +1,15 @@
 export interface Ingredient {
   name: string;
   amount?: string;
-  category: 'fresh' | 'protein' | 'basics' | 'extras';
+  category: 'fresh' | 'protein' | 'dairy' | 'legumes' | 'grains' | 'basics' | 'extras';
 }
+
+export type MealType = 'breakfast' | 'dinner';
 
 export interface Meal {
   id: number;
   day: number;
+  type: MealType;
   title: string;
   subtitle: string;
   culturalOrigin: string[];
@@ -15,6 +18,7 @@ export interface Meal {
   benefit: string;
   prepTime: number; // in minutes
   tags: string[];
+  proteinOptions?: string[]; // For meals with protein alternatives
 }
 
 export interface UserProgress {
@@ -35,6 +39,7 @@ export interface UserPreferences {
 export interface ShoppingItem {
   name: string;
   amount: string;
-  category: 'fresh' | 'protein' | 'basics' | 'extras';
+  category: 'fresh' | 'protein' | 'dairy' | 'legumes' | 'grains' | 'basics' | 'extras';
   checked: boolean;
+  mealType?: MealType | 'both';
 }

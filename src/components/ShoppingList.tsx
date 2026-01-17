@@ -1,12 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { shoppingList, categoryLabels } from '@/data/meals';
+import { breakfastShoppingList, dinnerShoppingList, categoryLabels, mealTypeLabels } from '@/data/meals';
+import { MealType } from '@/types';
+
+type ShoppingFilter = MealType | 'all';
+
+const categoryIcons: Record<string, string> = {
+  fresh: '🥬',
+  protein: '🥩',
+  dairy: '🥛',
+  legumes: '🫘',
+  grains: '🌾',
+  basics: '🫒',
+  extras: '🧂',
+};
+
+const categoryOrder = ['fresh', 'protein', 'dairy', 'legumes', 'grains', 'basics', 'extras'];
 
 export function ShoppingList() {
   const { progress, toggleShoppingItem } = useApp();
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(['fresh', 'protein', 'basics', 'extras']);
+  const [filter, setFilter] = useState<ShoppingFilter>('all');
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(categoryOrder);
+
+  // Get filtered shopping list
+  const shoppingList = useMemo(() => {
+    if (filter === 'breakfast') {
+      return breakfastShoppingList;
+    }
+    if (filter === 'dinner') {
+      return dinnerShoppingList;
+    }
+    // For 'all', combine both lists (items with mealType 'both' are already in breakfast list)
+    const combined = [...breakfastShoppingList];
+    dinnerShoppingList.forEach((item) => {
+      // Check if item already exists (by name)
+      const exists = combined.some((existing) => existing.name === item.name);
+      if (!exists) {
+        combined.push(item);
+      }
+    });
+    return combined;
+  }, [filter]);
+
+  // Get available categories based on current shopping list
+  const availableCategories = useMemo(() => {
+    const cats = new Set(shoppingList.map((item) => item.category));
+    return categoryOrder.filter((cat) => cats.has(cat as typeof shoppingList[number]['category']));
+  }, [shoppingList]);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories((prev) =>
@@ -16,12 +58,10 @@ export function ShoppingList() {
     );
   };
 
-  const categories = ['fresh', 'protein', 'basics', 'extras'] as const;
-
-  const getCategoryItems = (category: typeof categories[number]) =>
+  const getCategoryItems = (category: string) =>
     shoppingList.filter((item) => item.category === category);
 
-  const getCategoryProgress = (category: typeof categories[number]) => {
+  const getCategoryProgress = (category: string) => {
     const items = getCategoryItems(category);
     const checked = items.filter((item) =>
       progress.shoppingListChecked.includes(item.name)
@@ -29,10 +69,12 @@ export function ShoppingList() {
     return { checked, total: items.length };
   };
 
-  const totalProgress = {
-    checked: progress.shoppingListChecked.length,
+  const totalProgress = useMemo(() => ({
+    checked: shoppingList.filter((item) =>
+      progress.shoppingListChecked.includes(item.name)
+    ).length,
     total: shoppingList.length,
-  };
+  }), [shoppingList, progress.shoppingListChecked]);
 
   return (
     <section className="rounded-2xl border-2 border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
@@ -45,14 +87,52 @@ export function ShoppingList() {
             {totalProgress.checked}/{totalProgress.total}
           </span>
         </div>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+
+        {/* Filter Toggle */}
+        <div className="mt-3 flex justify-center">
+          <div className="inline-flex rounded-xl bg-gray-100 p-1 dark:bg-gray-700">
+            <button
+              onClick={() => setFilter('all')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                filter === 'all'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              }`}
+            >
+              Alles
+            </button>
+            <button
+              onClick={() => setFilter('breakfast')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                filter === 'breakfast'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              }`}
+            >
+              {mealTypeLabels.breakfast}
+            </button>
+            <button
+              onClick={() => setFilter('dinner')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                filter === 'dinner'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              }`}
+            >
+              {mealTypeLabels.dinner}
+            </button>
+          </div>
+        </div>
+
+        <p className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
           Für 2 Personen / 7 Tage
         </p>
+
         {/* Progress bar */}
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
           <div
             className="h-full bg-green-500 transition-all duration-300"
-            style={{ width: `${(totalProgress.checked / totalProgress.total) * 100}%` }}
+            style={{ width: `${totalProgress.total > 0 ? (totalProgress.checked / totalProgress.total) * 100 : 0}%` }}
             role="progressbar"
             aria-valuenow={totalProgress.checked}
             aria-valuemin={0}
@@ -63,7 +143,7 @@ export function ShoppingList() {
       </header>
 
       <div className="divide-y divide-gray-100 dark:divide-gray-700">
-        {categories.map((category) => {
+        {availableCategories.map((category) => {
           const items = getCategoryItems(category);
           const { checked, total } = getCategoryProgress(category);
           const isExpanded = expandedCategories.includes(category);
@@ -78,10 +158,7 @@ export function ShoppingList() {
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl" aria-hidden="true">
-                    {category === 'fresh' && '🥬'}
-                    {category === 'protein' && '🥚'}
-                    {category === 'basics' && '🍞'}
-                    {category === 'extras' && '🥜'}
+                    {categoryIcons[category]}
                   </span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {categoryLabels[category]}

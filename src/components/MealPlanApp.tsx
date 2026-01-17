@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { meals } from '@/data/meals';
+import { breakfastMeals, dinnerMeals, mealTypeLabels } from '@/data/meals';
+import { MealType } from '@/types';
 import { MealCard } from './MealCard';
 import { DaySelector } from './DaySelector';
 import { ShoppingList } from './ShoppingList';
@@ -13,6 +14,7 @@ export function MealPlanApp() {
   const { progress, isLoaded, startPlan } = useApp();
   const [activeTab, setActiveTab] = useState<'plan' | 'shopping' | 'settings'>('plan');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [mealType, setMealType] = useState<MealType>('breakfast');
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const hasStarted = useRef(false);
@@ -22,6 +24,9 @@ export function MealPlanApp() {
 
   // Derive the display day - use selectedDay if set, otherwise use progress.currentDay
   const displayDay = selectedDay ?? progress.currentDay ?? 1;
+
+  // Get meals based on type
+  const currentMeals = mealType === 'breakfast' ? breakfastMeals : dinnerMeals;
 
   // Start plan on first load (only once)
   useEffect(() => {
@@ -77,8 +82,8 @@ export function MealPlanApp() {
   }, [activeTab, displayDay]);
 
   const selectedMeal = useMemo(() =>
-    meals.find((m) => m.day === displayDay),
-    [displayDay]
+    currentMeals.find((m) => m.day === displayDay),
+    [currentMeals, displayDay]
   );
 
   if (!isLoaded) {
@@ -93,13 +98,41 @@ export function MealPlanApp() {
     <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-900">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-lg dark:border-gray-700 dark:bg-gray-900/80">
-        <div className="mx-auto max-w-lg px-4 py-4">
+        <div className="mx-auto max-w-lg px-4 py-3">
           <h1 className="text-center text-xl font-bold text-gray-900 dark:text-white">
-            Frühstücksplan
+            7-Tage Mahlzeitenplan
           </h1>
           <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-            Albanisch • Deutsch • Französisch
+            Albanisch - Deutsch - Französisch
           </p>
+
+          {/* Meal Type Toggle */}
+          {activeTab === 'plan' && (
+            <div className="mt-3 flex justify-center">
+              <div className="inline-flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+                <button
+                  onClick={() => setMealType('breakfast')}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                    mealType === 'breakfast'
+                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                >
+                  {mealTypeLabels.breakfast}
+                </button>
+                <button
+                  onClick={() => setMealType('dinner')}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                    mealType === 'dinner'
+                      ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                >
+                  {mealTypeLabels.dinner}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
