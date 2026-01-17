@@ -5,7 +5,7 @@ import { ProgressRing } from './ProgressRing';
 import { principles } from '@/data/meals';
 
 export function Settings() {
-  const { progress, updatePreferences, resetProgress } = useApp();
+  const { progress, syncStatus, updatePreferences, resetProgress } = useApp();
 
   const handleServingsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     updatePreferences({ servings: parseInt(e.target.value, 10) });
@@ -137,6 +137,31 @@ export function Settings() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* Sync Status Section */}
+      <section className="rounded-2xl border-2 border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
+          Cloud-Sync
+        </h2>
+        <div className="flex items-center gap-3">
+          <div className={`h-3 w-3 rounded-full ${
+            syncStatus === 'synced' ? 'bg-green-500' :
+            syncStatus === 'syncing' ? 'bg-yellow-500 animate-pulse' :
+            syncStatus === 'error' ? 'bg-red-500' :
+            'bg-gray-400'
+          }`} />
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {syncStatus === 'synced' && 'Synchronisiert'}
+            {syncStatus === 'syncing' && 'Synchronisiere...'}
+            {syncStatus === 'error' && 'Sync-Fehler'}
+            {syncStatus === 'offline' && 'Offline-Modus'}
+            {!syncStatus && 'Verbinde...'}
+          </span>
+        </div>
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          Deine Daten werden automatisch in der Cloud gespeichert und sind auf allen Geräten verfügbar.
+        </p>
       </section>
 
       {/* Reset Section */}

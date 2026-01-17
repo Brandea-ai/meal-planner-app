@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useCallback, useMemo } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useCloudSync } from '@/hooks/useCloudSync';
 import { UserProgress, UserPreferences } from '@/types';
 
 const defaultPreferences: UserPreferences = {
@@ -11,17 +11,10 @@ const defaultPreferences: UserPreferences = {
   servings: 2,
 };
 
-const defaultProgress: UserProgress = {
-  completedDays: [],
-  currentDay: 1,
-  startDate: null,
-  preferences: defaultPreferences,
-  shoppingListChecked: [],
-};
-
 interface AppContextType {
   progress: UserProgress;
   isLoaded: boolean;
+  syncStatus: string | null;
   completeDay: (day: number) => void;
   uncompleteDay: (day: number) => void;
   setCurrentDay: (day: number) => void;
@@ -35,7 +28,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [progress, setProgress, isLoaded] = useLocalStorage<UserProgress>('meal-planner-progress', defaultProgress);
+  const [progress, setProgress, isLoaded, syncStatus] = useCloudSync();
 
   const completeDay = useCallback((day: number) => {
     setProgress((prev) => ({
@@ -78,7 +71,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [setProgress]);
 
   const resetProgress = useCallback(() => {
-    setProgress(defaultProgress);
+    setProgress({
+      completedDays: [],
+      currentDay: 1,
+      startDate: null,
+      preferences: defaultPreferences,
+      shoppingListChecked: [],
+    });
   }, [setProgress]);
 
   const startPlan = useCallback(() => {
@@ -96,6 +95,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     progress,
     isLoaded,
+    syncStatus,
     completeDay,
     uncompleteDay,
     setCurrentDay,
@@ -104,7 +104,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     resetProgress,
     startPlan,
     getCompletionPercentage,
-  }), [progress, isLoaded, completeDay, uncompleteDay, setCurrentDay, updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage]);
+  }), [progress, isLoaded, syncStatus, completeDay, uncompleteDay, setCurrentDay, updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage]);
 
   return (
     <AppContext.Provider value={value}>
