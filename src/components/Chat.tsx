@@ -54,7 +54,19 @@ export function Chat({ onBack }: ChatProps) {
     verifyPassword,
     logout,
     remainingTime,
+    refreshChat,
   } = useChat();
+
+  // Refresh chat when component mounts or becomes visible
+  useEffect(() => {
+    // Refresh on mount
+    refreshChat();
+
+    // Also refresh when window gains focus (in case sync happened)
+    const handleFocus = () => refreshChat();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refreshChat]);
 
   const {
     callState,
@@ -262,75 +274,97 @@ export function Chat({ onBack }: ChatProps) {
     );
   }
 
+  // Swipe to go back
+  const handleTouchStartSwipe = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (touch.clientX < 30) { // Only from left edge
+      (e.currentTarget as HTMLElement).dataset.swipeStartX = String(touch.clientX);
+    }
+  }, []);
+
+  const handleTouchMoveSwipe = useCallback((e: React.TouchEvent) => {
+    const startX = Number((e.currentTarget as HTMLElement).dataset.swipeStartX);
+    if (!startX) return;
+
+    const touch = e.touches[0];
+    const diff = touch.clientX - startX;
+    if (diff > 100) {
+      onBack();
+      (e.currentTarget as HTMLElement).dataset.swipeStartX = '';
+    }
+  }, [onBack]);
+
+  const handleTouchEndSwipe = useCallback((e: React.TouchEvent) => {
+    (e.currentTarget as HTMLElement).dataset.swipeStartX = '';
+  }, []);
+
   return (
-    <div className="flex h-screen flex-col bg-[var(--background)]">
-      {/* Header */}
+    <div
+      className="flex h-screen flex-col bg-[var(--background)]"
+      onTouchStart={handleTouchStartSwipe}
+      onTouchMove={handleTouchMoveSwipe}
+      onTouchEnd={handleTouchEndSwipe}
+    >
+      {/* Header - Responsive */}
       <header className="sticky top-0 z-40 glass-header safe-area-top">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-3 py-2 gap-2">
+          {/* Left: Back button */}
           <motion.button
             onClick={onBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full glass-inner"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full glass-inner"
             aria-label="Zurück"
             whileTap={{ scale: 0.95 }}
           >
-            <ArrowLeft size={24} className="text-[var(--system-blue)]" />
+            <ArrowLeft size={20} className="text-[var(--system-blue)]" />
           </motion.button>
-          <div className="flex flex-1 items-center justify-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--system-green)]">
-              <MessageCircle size={18} className="text-white" />
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1.5">
-                <h1 className="font-semibold text-[var(--foreground)]">Familien-Chat</h1>
-                {isEncrypted && (
-                  <Shield size={14} className="text-[var(--system-green)]" />
-                )}
+
+          {/* Center: Title */}
+          <div className="flex flex-1 items-center justify-center min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--system-green)]">
+                <MessageCircle size={16} className="text-white" />
               </div>
-              <p className="text-xs text-[var(--foreground-tertiary)]">
-                {isEncrypted ? 'Verschlüsselt' : ''} {messages.length} Nachrichten
-                {remainingTime !== null && remainingTime <= 60 && (
-                  <span className="ml-1 text-[var(--system-orange)]">
-                    · {Math.floor(remainingTime / 60)}:{(remainingTime % 60).toString().padStart(2, '0')}
-                  </span>
-                )}
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1">
+                  <h1 className="font-semibold text-[var(--foreground)] text-sm truncate">Chat</h1>
+                  {isEncrypted && (
+                    <Shield size={12} className="text-[var(--system-green)] flex-shrink-0" />
+                  )}
+                </div>
+                <p className="text-[10px] text-[var(--foreground-tertiary)] truncate">
+                  {messages.length} Nachrichten
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <motion.button
               onClick={() => startCall('audio')}
               disabled={callState !== 'idle'}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-green)]/15 text-[var(--system-green)] disabled:opacity-50"
-              aria-label="Sprachanruf"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--system-green)]/15 text-[var(--system-green)] disabled:opacity-50"
+              aria-label="Anrufen"
               whileTap={{ scale: 0.95 }}
             >
-              <Phone size={18} />
+              <Phone size={16} />
             </motion.button>
             <motion.button
               onClick={() => startCall('video')}
               disabled={callState !== 'idle'}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-blue)]/15 text-[var(--system-blue)] disabled:opacity-50"
-              aria-label="Videoanruf"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--system-blue)]/15 text-[var(--system-blue)] disabled:opacity-50"
+              aria-label="Video"
               whileTap={{ scale: 0.95 }}
             >
-              <Video size={18} />
+              <Video size={16} />
             </motion.button>
             <motion.button
               onClick={() => setShowNameInput(true)}
-              className="flex h-10 items-center gap-1.5 rounded-full glass-inner px-3 text-sm text-[var(--foreground-secondary)]"
+              className="flex h-9 w-9 items-center justify-center rounded-full glass-inner"
+              aria-label="Profil"
               whileTap={{ scale: 0.95 }}
             >
-              <User size={14} />
-              {senderName}
-            </motion.button>
-            <motion.button
-              onClick={logout}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-red)]/15 text-[var(--system-red)]"
-              aria-label="Zurücksetzen"
-              title="Verschlüsselung zurücksetzen"
-              whileTap={{ scale: 0.95 }}
-            >
-              <LogOut size={16} />
+              <User size={16} className="text-[var(--foreground-secondary)]" />
             </motion.button>
           </div>
         </div>

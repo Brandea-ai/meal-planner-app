@@ -36,6 +36,9 @@ interface UseChatReturn {
   logout: () => void;
   // Auto-logout
   remainingTime: number | null; // seconds until auto-logout, null if not logged in
+  // Refresh
+  refreshChat: () => void;
+  deviceId: string;
 }
 
 export function useChat(): UseChatReturn {
@@ -48,6 +51,7 @@ export function useChat(): UseChatReturn {
   const [password, setPasswordState] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [hasEncryptedMessages, setHasEncryptedMessages] = useState(false);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const deviceIdRef = useRef<string>('');
@@ -97,6 +101,7 @@ export function useChat(): UseChatReturn {
 
       const deviceId = getDeviceId();
       deviceIdRef.current = deviceId;
+      setCurrentDeviceId(deviceId);
 
       const hasLocalSetup = hasPasswordSetup();
       const storedPassword = getStoredPassword();
@@ -558,6 +563,20 @@ export function useChat(): UseChatReturn {
     setRemainingTime(Math.floor(INACTIVITY_TIMEOUT / 1000));
   }, []);
 
+  // Refresh chat - reload messages with current device_id
+  const refreshChat = useCallback(() => {
+    const deviceId = getDeviceId();
+    if (deviceId !== deviceIdRef.current) {
+      // Device ID changed (after sync)
+      deviceIdRef.current = deviceId;
+      setCurrentDeviceId(deviceId);
+    }
+    // Reload messages
+    loadMessages(deviceId);
+    // Re-setup realtime subscription
+    setupRealtimeSubscription(deviceId);
+  }, [loadMessages, setupRealtimeSubscription]);
+
   // Start auto-logout timer when logged in
   useEffect(() => {
     // Only run if logged in (has password)
@@ -622,5 +641,8 @@ export function useChat(): UseChatReturn {
     logout,
     // Auto-logout
     remainingTime,
+    // Refresh
+    refreshChat,
+    deviceId: currentDeviceId,
   };
 }
