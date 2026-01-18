@@ -471,6 +471,25 @@ export function Chat({ onBack }: ChatProps) {
                         <p className="text-xs text-[var(--foreground-tertiary)]">{senderName || 'Nicht gesetzt'}</p>
                       </div>
                     </button>
+
+                    <div className="my-2 border-t border-[var(--glass-border)]" />
+
+                    <button
+                      onClick={() => {
+                        if (confirm('Alle lokalen Daten löschen? Du musst dich danach neu verbinden.')) {
+                          localStorage.clear();
+                          sessionStorage.clear();
+                          window.location.reload();
+                        }
+                      }}
+                      className="flex w-full items-center gap-3 rounded-[10px] p-3 text-left transition-none active:bg-[var(--vibrancy-regular)]"
+                    >
+                      <Trash2 size={18} className="text-[var(--system-red)]" />
+                      <div>
+                        <p className="text-sm font-medium text-[var(--system-red)]">Alle Daten löschen</p>
+                        <p className="text-xs text-[var(--foreground-tertiary)]">Zurücksetzen & neu verbinden</p>
+                      </div>
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
