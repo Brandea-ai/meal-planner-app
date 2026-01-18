@@ -10,7 +10,7 @@ import { MealCard } from './MealCard';
 import { DaySelector } from './DaySelector';
 import { ShoppingList } from './ShoppingList';
 import { Settings } from './Settings';
-import { Sidebar } from './Sidebar';
+import { Navigation } from './Navigation';
 import { Statistics } from './statistics/Statistics';
 import { Chat } from './Chat';
 
@@ -176,8 +176,8 @@ export function MealPlanApp() {
   const isChatFullscreen = activeTab === 'chat';
 
   return (
-    <div className={`min-h-screen bg-[var(--background)]`}>
-      {/* Header with Burger Menu - hidden in chat mode */}
+    <div className={`min-h-screen bg-[var(--background)] ${isChatFullscreen ? '' : 'pb-20'}`}>
+      {/* Header - hidden in chat mode */}
       <AnimatePresence>
         {!isChatFullscreen && (
           <motion.header
@@ -188,30 +188,14 @@ export function MealPlanApp() {
             exit={{ opacity: 0, y: -20 }}
           >
             <div className="mx-auto max-w-lg px-4 py-3">
-              <div className="flex items-center justify-between">
-                {/* Burger Menu */}
-                <Sidebar
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  mealType={mealType}
-                  onMealTypeChange={setMealType}
-                />
+              <h1 className="text-center text-lg font-semibold text-[var(--foreground)]">
+                7-Tage Mahlzeitenplan
+              </h1>
+              <p className="text-center text-xs text-[var(--foreground-tertiary)]">
+                Albanisch · Deutsch · Französisch
+              </p>
 
-                {/* Title */}
-                <div className="flex-1 text-center">
-                  <h1 className="text-lg font-semibold text-[var(--foreground)]">
-                    {activeTab === 'plan' && '7-Tage Plan'}
-                    {activeTab === 'shopping' && 'Einkaufsliste'}
-                    {activeTab === 'statistics' && 'Statistik'}
-                    {activeTab === 'settings' && 'Einstellungen'}
-                  </h1>
-                </div>
-
-                {/* Spacer for alignment */}
-                <div className="w-10" />
-              </div>
-
-              {/* Meal Type Toggle - Segmented Control (only on plan tab) */}
+              {/* Meal Type Toggle - Segmented Control */}
               <AnimatePresence mode="wait">
                 {activeTab === 'plan' && (
                   <motion.div
@@ -366,6 +350,11 @@ export function MealPlanApp() {
             )}
           </AnimatePresence>
         </main>
+      )}
+
+      {/* Bottom Navigation - hidden in chat mode */}
+      {!isChatFullscreen && (
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       )}
     </div>
   );
