@@ -12,7 +12,8 @@ export interface PreparationStep {
   title: string;
   description: string;
   duration?: string; // e.g., "5 Min"
-  tip?: string; // Pro-Tipp
+  tip?: string; // Pro-Tipp (evidenzbasiert)
+  typicalMistake?: string; // Typischer Fehler zu vermeiden
 }
 
 export interface Meal {

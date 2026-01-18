@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Clock, Lightbulb, ChefHat } from 'lucide-react';
+import { X, Check, Clock, Lightbulb, ChefHat, AlertTriangle } from 'lucide-react';
 import { PreparationStep } from '@/types';
 
 interface PreparationChecklistProps {
@@ -207,11 +207,25 @@ export function PreparationChecklist({ isOpen, onClose, mealTitle, steps, mealId
                               {step.description}
                             </p>
 
-                            {/* Tip */}
+                            {/* Pro-Tip */}
                             {step.tip && (
                               <div className="mt-2 flex items-start gap-2 rounded-lg bg-[var(--system-yellow)]/10 p-2">
                                 <Lightbulb size={14} className="mt-0.5 flex-shrink-0 text-[var(--system-yellow)]" />
-                                <p className="text-xs text-[var(--foreground-secondary)]">{step.tip}</p>
+                                <p className="text-xs text-[var(--foreground-secondary)]">
+                                  <span className="font-medium text-[var(--system-yellow)]">Pro-Tipp: </span>
+                                  {step.tip}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Typischer Fehler */}
+                            {step.typicalMistake && (
+                              <div className="mt-2 flex items-start gap-2 rounded-lg bg-[var(--system-red)]/10 p-2">
+                                <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-[var(--system-red)]" />
+                                <p className="text-xs text-[var(--foreground-secondary)]">
+                                  <span className="font-medium text-[var(--system-red)]">Vermeiden: </span>
+                                  {step.typicalMistake}
+                                </p>
                               </div>
                             )}
                           </div>

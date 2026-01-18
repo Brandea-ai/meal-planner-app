@@ -2,6 +2,8 @@ import { Meal, ShoppingItem, PreparationStep } from '@/types';
 
 // ============================================
 // FRÜHSTÜCK (Breakfast) - 7 Tage
+// Evidenzbasiert: Protein + Ballaststoffe + gesunde Fette
+// Mengen für 2 Personen
 // ============================================
 
 export const breakfastMeals: Meal[] = [
@@ -9,150 +11,210 @@ export const breakfastMeals: Meal[] = [
     id: 1,
     day: 1,
     type: 'breakfast',
-    title: "Albanisch-Brunch Deluxe",
-    subtitle: "Avocado-Toast meets Speca",
-    culturalOrigin: ["Albanisch", "Modern"],
+    title: "Avocado-Ei-Toast",
+    subtitle: "Modern meets Albanisch",
+    culturalOrigin: ["Modern", "Albanisch"],
     ingredients: [
-      { name: "Vollkorn-Toast", amount: "2 Scheiben", category: "grains" },
+      { name: "Vollkorn-Toast", amount: "2-4 Scheiben", category: "grains" },
       { name: "Avocado", amount: "1 reif", category: "fresh" },
-      { name: "Zitronensaft", amount: "1 EL", category: "basics" },
-      { name: "Ajvar", amount: "2 EL", category: "basics" },
-      { name: "Rote Paprika (Speca)", amount: "1/2", category: "fresh" },
-      { name: "Oliven", amount: "Handvoll", category: "basics" },
-      { name: "Tomaten", amount: "1 klein", category: "fresh", forSideDish: true },
-      { name: "Gurke", amount: "1/4", category: "fresh", forSideDish: true },
+      { name: "Eier", amount: "2-4", category: "protein" },
+      { name: "Zitrone", amount: "1", category: "fresh" },
+      { name: "Pfeffer", amount: "nach Geschmack", category: "extras" },
+      { name: "Chili", amount: "optional", category: "extras" },
+      { name: "Tomaten", amount: "2", category: "fresh", forSideDish: true },
+      { name: "Gurke", amount: "1", category: "fresh", forSideDish: true },
     ],
-    sideDish: "Tomaten-Gurken-Salat",
-    benefit: "Proteine + gesunde Fette + Gemüse - gleich satt und stabil",
-    prepTime: 12,
-    tags: ["vegetarisch", "ballaststoffreich", "omega-fette"],
+    sideDish: "Tomaten-Gurken-Salat mit Zitrone",
+    benefit: "Avocado liefert einfach ungesättigte Fettsäuren (MUFA), die laut Studien LDL-Cholesterin senken. Eier = vollständiges Aminosäureprofil mit ~6g Protein/Ei.",
+    prepTime: 10,
+    tags: ["vegetarisch", "omega-fette", "proteinreich"],
+    preparationSteps: [
+      { step: 1, title: "Toast rösten", description: "Vollkorn-Toast im Toaster goldbraun rösten.", duration: "2-3 Min" },
+      { step: 2, title: "Avocado zerdrücken", description: "Avocado in einer Schüssel zerdrücken. Zitronensaft + Pfeffer hinzufügen, Salz nur sparsam verwenden.", duration: "2 Min", tip: "Zitronensäure verhindert enzymatische Bräunung (Oxidation) und verstärkt den Geschmack ohne Salz." },
+      { step: 3, title: "Eier braten", description: "Eier als Spiegelei braten oder als Rührei zubereiten. Bei mittlerer Hitze für zartes Ergebnis.", duration: "3-5 Min" },
+      { step: 4, title: "Salat anmachen", description: "Tomaten und Gurke in Scheiben schneiden. Mit Zitronensaft (oder 1 TL Olivenöl) anmachen.", duration: "3 Min" },
+      { step: 5, title: "Anrichten", description: "Toast mit Avocado bestreichen, Ei obendrauf. Optional: Chili für Kick.", duration: "1 Min", typicalMistake: "Zu viel Salz auf Avocado → Kombination mit salzigen Dips/Oliven später wird zur Salzfalle." },
+    ],
   },
   {
     id: 2,
     day: 2,
     type: 'breakfast',
-    title: "Französische Omelette",
-    subtitle: "Mit Balkan-Twist",
-    culturalOrigin: ["Französisch", "Balkan"],
+    title: "Shakshuka",
+    subtitle: "Arabischer Klassiker",
+    culturalOrigin: ["Arabisch", "Nordafrikanisch"],
     ingredients: [
-      { name: "Eier", amount: "2-3", category: "protein" },
-      { name: "Petersilie", amount: "frisch", category: "fresh" },
-      { name: "Dill", amount: "frisch", category: "fresh" },
-      { name: "Zwiebel", amount: "1/4", category: "fresh" },
-      { name: "Feta/Sirene", amount: "30g", category: "dairy" },
+      { name: "Zwiebel", amount: "1", category: "fresh" },
+      { name: "Paprika", amount: "1", category: "fresh" },
+      { name: "Knoblauch", amount: "2-3 Zehen", category: "fresh" },
+      { name: "Tomaten (Dose)", amount: "1 Dose (400g)", category: "basics" },
+      { name: "Eier", amount: "4", category: "protein" },
+      { name: "Kreuzkümmel", amount: "1 TL", category: "extras" },
+      { name: "Paprika Gewürz", amount: "1 TL", category: "extras" },
       { name: "Pfeffer", amount: "nach Geschmack", category: "extras" },
-      { name: "Baguette-Toast", amount: "1 Scheibe", category: "grains" },
-      { name: "Gurke", amount: "Scheiben", category: "fresh", forSideDish: true },
+      { name: "Chili", amount: "optional", category: "extras" },
+      { name: "Petersilie", amount: "frisch", category: "fresh" },
+      { name: "Vollkornbrot", amount: "2-4 Scheiben", category: "grains", forSideDish: true },
     ],
-    sideDish: "Gurkenscheiben",
-    benefit: "Eier + Kräuter geben Volumen und Nährstoffe, Feta leicht salzig-cremig",
-    prepTime: 10,
-    tags: ["proteinreich", "low-carb-option", "kräuter"],
+    sideDish: "Vollkornbrot zum Dippen",
+    benefit: "Lycopin aus gekochten Tomaten ist 4x bioverfügbarer als roh (Studie: Journal of Agricultural Chemistry). Eier liefern Cholin für Gehirnfunktion.",
+    prepTime: 20,
+    tags: ["proteinreich", "mediterran", "herzhaft"],
+    preparationSteps: [
+      { step: 1, title: "Gemüse anbraten", description: "Zwiebel + Paprika würfeln und in wenig Öl 5-7 Min anschwitzen bis weich.", duration: "5-7 Min" },
+      { step: 2, title: "Knoblauch hinzufügen", description: "Knoblauch fein hacken und nur 30 Sekunden mitbraten.", duration: "30 Sek", tip: "Knoblauch verbrennt schnell bei hoher Hitze → bitter. Immer als letztes zum Gemüse." },
+      { step: 3, title: "Tomatensauce kochen", description: "Dosentomaten + Kreuzkümmel + Paprikapulver + Pfeffer hinzufügen. 8-10 Min einkochen bis sämig.", duration: "8-10 Min", tip: "Sauce erst sämig reduzieren → konzentrierter Geschmack. Zu sauer? 1 Prise Zucker neutralisiert." },
+      { step: 4, title: "Mulden für Eier", description: "Mit einem Löffel 4 Mulden in die Sauce drücken.", duration: "1 Min" },
+      { step: 5, title: "Eier pochieren", description: "Eier vorsichtig in die Mulden gleiten lassen. Deckel drauf und 5-7 Min garen (je nach gewünschter Eigelb-Konsistenz).", duration: "5-7 Min", typicalMistake: "Eier zu früh in wässrige Sauce → werden zäh und Sauce bleibt dünn." },
+      { step: 6, title: "Servieren", description: "Mit frischer Petersilie garnieren. Mit Vollkornbrot servieren.", duration: "1 Min" },
+    ],
   },
   {
     id: 3,
     day: 3,
     type: 'breakfast',
-    title: "Deutsch-Albanisch Power Bowl",
-    subtitle: "Skyr mit herzhaftem Twist",
-    culturalOrigin: ["Deutsch", "Albanisch"],
+    title: "Kräuter-Omelette",
+    subtitle: "Französische Technik",
+    culturalOrigin: ["Französisch"],
     ingredients: [
-      { name: "Skyr/Magerquark", amount: "200g", category: "dairy" },
-      { name: "Walnüsse", amount: "Handvoll", category: "extras" },
-      { name: "Apfel", amount: "1/2", category: "fresh" },
-      { name: "Zimt", amount: "Prise", category: "extras" },
-      { name: "Tomaten", amount: "1 klein", category: "fresh", forSideDish: true },
-      { name: "Oliven", amount: "einige", category: "basics", forSideDish: true },
+      { name: "Eier", amount: "4", category: "protein" },
+      { name: "Schnittlauch", amount: "frisch", category: "fresh" },
+      { name: "Petersilie", amount: "frisch", category: "fresh" },
+      { name: "Dill", amount: "frisch", category: "fresh" },
+      { name: "Butter oder Öl", amount: "1 TL", category: "basics" },
+      { name: "Pfeffer", amount: "nach Geschmack", category: "extras" },
+      { name: "Tomate", amount: "1", category: "fresh", forSideDish: true },
+      { name: "Gurke", amount: "1", category: "fresh", forSideDish: true },
+      { name: "Vollkornbrot", amount: "2 Scheiben", category: "grains", forSideDish: true },
     ],
-    sideDish: "Tomaten + Oliven als herzhaftes Topping",
-    benefit: "Eiweißbombe mit Crunch + Herzhaft-Süß kombiniert - Heißhunger-Kontrolle",
-    prepTime: 8,
-    tags: ["proteinreich", "schnell", "süß-herzhaft"],
+    sideDish: "Rohkost (Tomate + Gurke) + Vollkornbrot",
+    benefit: "Kräuter liefern Polyphenole und Antioxidantien. Französische Omelette-Technik (niedrige Hitze) = zarter, nicht gummiartiger Textur.",
+    prepTime: 10,
+    tags: ["proteinreich", "low-carb-option", "kräuter"],
+    preparationSteps: [
+      { step: 1, title: "Eier verquirlen", description: "Eier in Schüssel verquirlen. Frische Kräuter fein hacken und unterrühren. Nur pfeffern, Salz sparsam.", duration: "2 Min" },
+      { step: 2, title: "Pfanne vorbereiten", description: "Pfanne auf MITTLERE Hitze stellen. Butter oder Öl hineingeben.", duration: "1 Min", tip: "Mittlere Hitze ist das Geheimnis der französischen Omelette-Technik → zart statt trocken." },
+      { step: 3, title: "Omelette stocken lassen", description: "Eier in die Pfanne geben. Langsam stocken lassen, dabei mit Spatel vom Rand zur Mitte schieben.", duration: "2-3 Min" },
+      { step: 4, title: "Zusammenklappen", description: "Omelette zur Hälfte zusammenklappen. Noch 30-60 Sekunden ziehen lassen.", duration: "30-60 Sek", typicalMistake: "Zu hohe Hitze → Omelette wird trocken, krümelig und verliert die cremige Textur." },
+      { step: 5, title: "Rohkost vorbereiten", description: "Tomate und Gurke in Scheiben schneiden.", duration: "2 Min" },
+      { step: 6, title: "Servieren", description: "Omelette mit Rohkost und Vollkornbrot anrichten.", duration: "1 Min" },
+    ],
   },
   {
     id: 4,
     day: 4,
     type: 'breakfast',
-    title: "Lachs-Toast Provençal",
-    subtitle: "Omega-3 Power",
-    culturalOrigin: ["Französisch", "Skandinavisch"],
+    title: "Asiatische Reis-Bowl",
+    subtitle: "Perfekt mit Reis-Rest",
+    culturalOrigin: ["Asiatisch", "Japanisch"],
     ingredients: [
-      { name: "Vollkorn-Toast", amount: "2 Scheiben", category: "grains" },
-      { name: "Frischkäse (leicht)", amount: "2 EL", category: "dairy" },
-      { name: "Räucherlachs", amount: "50g", category: "protein" },
-      { name: "Zitronenzeste", amount: "etwas", category: "fresh" },
-      { name: "Pfeffer", amount: "frisch gemahlen", category: "extras" },
-      { name: "Cherry-Tomaten", amount: "Handvoll", category: "fresh", forSideDish: true },
-      { name: "Dijon-Senf", amount: "1 TL", category: "basics", forSideDish: true },
-      { name: "Olivenöl", amount: "1 EL", category: "basics", forSideDish: true },
+      { name: "Naturreis (gekocht)", amount: "2-3 Tassen", category: "grains" },
+      { name: "Eier", amount: "2-4", category: "protein" },
+      { name: "Gurke", amount: "1", category: "fresh" },
+      { name: "Sojasauce", amount: "2-3 EL", category: "basics" },
+      { name: "Sesam", amount: "optional", category: "extras" },
+      { name: "Frühlingszwiebel", amount: "optional", category: "fresh" },
+      { name: "Chili", amount: "optional", category: "extras" },
     ],
-    sideDish: "Cherry-Tomaten-Salat mit Dijon-Vinaigrette",
-    benefit: "Omega-3 aus Lachs + Proteine + frische Aromen",
-    prepTime: 10,
-    tags: ["omega-3", "brain-food", "mediterran"],
+    sideDish: "Gurke als frische Komponente",
+    benefit: "Naturreis hat 3x mehr Ballaststoffe als weißer Reis. Reisreste = praktisch + resistente Stärke (präbiotisch, gut für Darmmikrobiom).",
+    prepTime: 12,
+    tags: ["schnell", "meal-prep-freundlich", "asiatisch"],
+    preparationSteps: [
+      { step: 1, title: "Eier kochen", description: "Eier 7-9 Min kochen (7 Min = weich, 9 Min = wachsweich). Abschrecken und schälen.", duration: "7-9 Min", tip: "Abschrecken mit kaltem Wasser stoppt den Garprozess und erleichtert das Schälen." },
+      { step: 2, title: "Reis erwärmen", description: "Reis im Topf oder in der Mikrowelle erwärmen.", duration: "2-3 Min" },
+      { step: 3, title: "Gemüse schneiden", description: "Gurke in dünne Scheiben schneiden. Optional: Frühlingszwiebel in Ringe.", duration: "2 Min" },
+      { step: 4, title: "Sauce verdünnen", description: "Sojasauce mit 1-2 EL Wasser verdünnen.", duration: "30 Sek", tip: "Verdünnte Sojasauce = weniger Natrium bei gleichem Umami-Geschmack. Mehr Kontrolle über Salzgehalt." },
+      { step: 5, title: "Bowl zusammenstellen", description: "Reis in Schüssel, Gurkenscheiben daneben, halbierte Eier obendrauf. Verdünnte Sojasauce darüber.", duration: "2 Min", typicalMistake: "Zu viel unverdünnte Sojasauce → übersalzen, alles schmeckt gleich." },
+      { step: 6, title: "Topping", description: "Optional mit Sesam und Frühlingszwiebel garnieren.", duration: "30 Sek" },
+    ],
   },
   {
     id: 5,
     day: 5,
     type: 'breakfast',
-    title: "Balkan Egg Wrap",
-    subtitle: "Zum Mitnehmen",
-    culturalOrigin: ["Balkan", "Tex-Mex"],
+    title: "Quark-Toast mit Kräutern",
+    subtitle: "Deutsch-Albanisch Gjizë-Style",
+    culturalOrigin: ["Deutsch", "Albanisch"],
     ingredients: [
-      { name: "Weizentortilla/Wrap", amount: "1 groß", category: "grains" },
-      { name: "Eier", amount: "2", category: "protein" },
-      { name: "Spinat", amount: "Handvoll", category: "fresh" },
-      { name: "Paprika (Speca)", amount: "1/4", category: "fresh" },
-      { name: "Ajvar", amount: "1-2 EL", category: "basics" },
-      { name: "Joghurt", amount: "2 EL", category: "dairy", forSideDish: true },
-      { name: "Minze", amount: "frisch", category: "fresh", forSideDish: true },
+      { name: "Magerquark", amount: "250-300g", category: "dairy" },
+      { name: "Zitrone", amount: "1", category: "fresh" },
+      { name: "Dill", amount: "frisch", category: "fresh" },
+      { name: "Petersilie", amount: "frisch", category: "fresh" },
+      { name: "Pfeffer", amount: "nach Geschmack", category: "extras" },
+      { name: "Vollkornbrot", amount: "2-4 Scheiben", category: "grains" },
+      { name: "Tomaten", amount: "2", category: "fresh", forSideDish: true },
+      { name: "Gurke", amount: "1", category: "fresh", forSideDish: true },
+      { name: "Oliven", amount: "Handvoll", category: "basics", forSideDish: true },
     ],
-    sideDish: "Minz-Joghurt Dip",
-    benefit: "Komplettes Frühstück zum Mitnehmen",
-    prepTime: 12,
-    tags: ["to-go", "proteinreich", "praktisch"],
+    sideDish: "Tomaten + Gurke + Oliven",
+    benefit: "Quark = 12g Protein pro 100g bei nur 0.2g Fett. Kasein-Protein für langsame Freisetzung → länger satt.",
+    prepTime: 8,
+    tags: ["proteinreich", "schnell", "vegetarisch"],
+    preparationSteps: [
+      { step: 1, title: "Quark würzen", description: "Quark in Schüssel geben. Zitronensaft + fein gehackte Kräuter (Dill, Petersilie) + Pfeffer unterrühren. Salz nur sparsam.", duration: "2 Min", tip: "Zitrone + Kräuter = frischer Geschmack wie 'Urlaub am Mittelmeer', ohne auf Salz angewiesen zu sein." },
+      { step: 2, title: "Brot toasten", description: "Vollkornbrot toasten bis goldbraun.", duration: "2-3 Min" },
+      { step: 3, title: "Gemüse schneiden", description: "Tomaten in Scheiben, Gurke in Stücke schneiden.", duration: "2 Min" },
+      { step: 4, title: "Zusammenstellen", description: "Quark großzügig auf Toast verteilen. Tomatenscheiben darauf legen.", duration: "1 Min", typicalMistake: "Quark ohne Säure/Kräuter schmeckt fade → man greift zu Salz. Immer aromatisieren!" },
+      { step: 5, title: "Servieren", description: "Mit Gurke und Oliven als Beilage servieren.", duration: "1 Min" },
+    ],
   },
   {
     id: 6,
     day: 6,
     type: 'breakfast',
-    title: "Französisch-Albanischer Ratatouille-Toast",
-    subtitle: "Gemüse-Power",
-    culturalOrigin: ["Französisch", "Albanisch"],
+    title: "Lachs-Skyr-Toast",
+    subtitle: "Clean Omega-3 Power",
+    culturalOrigin: ["Deutsch", "Skandinavisch"],
     ingredients: [
-      { name: "Zucchini", amount: "1/2", category: "fresh" },
-      { name: "Aubergine", amount: "1/4", category: "fresh" },
-      { name: "Paprika", amount: "1/2", category: "fresh" },
-      { name: "Tomatensauce", amount: "2 EL", category: "basics" },
-      { name: "Vollkorn-Toast", amount: "1 Scheibe", category: "grains" },
-      { name: "Kräuter (Thymian, Oregano)", amount: "frisch", category: "fresh" },
-      { name: "Ajvar", amount: "1 EL", category: "basics", forSideDish: true },
-      { name: "Joghurt", amount: "1 EL", category: "dairy", forSideDish: true },
+      { name: "Räucherlachs", amount: "150-200g", category: "protein" },
+      { name: "Skyr oder Quark", amount: "250g", category: "dairy" },
+      { name: "Zitrone", amount: "1", category: "fresh" },
+      { name: "Dill", amount: "frisch", category: "fresh" },
+      { name: "Pfeffer", amount: "nach Geschmack", category: "extras" },
+      { name: "Vollkornbrot", amount: "2-4 Scheiben", category: "grains" },
+      { name: "Gurke", amount: "1", category: "fresh", forSideDish: true },
     ],
-    sideDish: "Ajvar oder Joghurt-Topping",
-    benefit: "Farben, Pflanzenstoffe, mediterrane Fette - satt ohne schwer",
-    prepTime: 15,
-    tags: ["vegetarisch", "ballaststoffreich", "mediterran"],
+    sideDish: "Gurkenscheiben",
+    benefit: "Lachs = 1.5-2g Omega-3 (EPA/DHA) pro 100g. AHA empfiehlt 2x Fisch/Woche für Herzgesundheit. Skyr statt Butter = cleaner.",
+    prepTime: 8,
+    tags: ["omega-3", "proteinreich", "brain-food"],
+    preparationSteps: [
+      { step: 1, title: "Skyr-Creme zubereiten", description: "Skyr/Quark mit Zitronensaft + fein gehacktem Dill + Pfeffer verrühren.", duration: "2 Min", tip: "Skyr/Quark statt Butter oder Mayo = gleicher cremiger Genuss, deutlich weniger gesättigte Fette." },
+      { step: 2, title: "Brot toasten", description: "Vollkornbrot toasten.", duration: "2-3 Min" },
+      { step: 3, title: "Zusammenstellen", description: "Skyr-Creme auf Toast verteilen. Räucherlachs darauf drapieren.", duration: "2 Min" },
+      { step: 4, title: "Gurke schneiden", description: "Gurke in Scheiben schneiden als frische Beilage.", duration: "1 Min" },
+      { step: 5, title: "Servieren", description: "Mit Gurkenscheiben servieren.", duration: "30 Sek", typicalMistake: "Extra Salz auf Lachs → unnötig, da Räucherlachs bereits salzhaltig ist (1-3g Salz/100g)." },
+    ],
   },
   {
     id: 7,
     day: 7,
     type: 'breakfast',
-    title: "Süß-Herzhaft Blend",
-    subtitle: "Beeren + Pute",
+    title: "Overnight Oats",
+    subtitle: "Low-Sugar + herzhafte Option",
     culturalOrigin: ["International", "Modern"],
     ingredients: [
-      { name: "Beeren (frisch/TK)", amount: "100g", category: "fresh" },
-      { name: "Joghurt", amount: "150g", category: "dairy" },
-      { name: "Honig", amount: "1 TL", category: "extras" },
+      { name: "Haferflocken", amount: "80-100g", category: "grains" },
+      { name: "Milch oder Joghurt", amount: "300-400ml", category: "dairy" },
+      { name: "Apfel oder Beeren", amount: "1 Apfel / 100g Beeren", category: "fresh" },
       { name: "Walnüsse", amount: "Handvoll", category: "extras" },
-      { name: "Putenschinken", amount: "2-3 Scheiben", category: "protein", forSideDish: true },
-      { name: "Vollkorn-Toast", amount: "1 Scheibe", category: "grains", forSideDish: true },
+      { name: "Leinsamen", amount: "1 EL", category: "extras" },
+      { name: "Zimt", amount: "1/2 TL", category: "extras" },
+      { name: "Ei (gekocht)", amount: "1-2 optional", category: "protein", forSideDish: true },
+      { name: "Gurke oder Tomate", amount: "optional", category: "fresh", forSideDish: true },
     ],
-    sideDish: "Putenschinken + Vollkorn-Toast",
-    benefit: "Mix aus Süß & Herzhaft balanciert Insulin + Energie",
-    prepTime: 8,
-    tags: ["süß-herzhaft", "proteinreich", "schnell"],
+    sideDish: "Optional: gekochtes Ei oder Gemüse für herzhafte Variante",
+    benefit: "Hafer-Beta-Glucan senkt LDL-Cholesterin (EFSA-bestätigt bei 3g/Tag). Overnight = resistente Stärke → präbiotisch für Darmgesundheit.",
+    prepTime: 5,
+    tags: ["meal-prep", "ballaststoffreich", "schnell"],
+    preparationSteps: [
+      { step: 1, title: "Abends vorbereiten", description: "Haferflocken + Milch/Joghurt + Zimt + Leinsamen in ein Glas geben. Gut umrühren.", duration: "2 Min", tip: "Abends 2 Min investieren → morgens 0 Aufwand. Meal-Prep-Effizienz." },
+      { step: 2, title: "Über Nacht kühlen", description: "Glas abdecken und über Nacht (mind. 6h) im Kühlschrank quellen lassen.", duration: "6-8 Std" },
+      { step: 3, title: "Morgens: Obst schneiden", description: "Apfel würfeln oder Beeren waschen.", duration: "1-2 Min" },
+      { step: 4, title: "Topping", description: "Obst und Walnüsse auf die Oats geben.", duration: "30 Sek" },
+      { step: 5, title: "Herzhafte Variante", description: "Optional: gekochtes Ei und/oder Gurkenscheiben als Side für mehr Protein und Sättigung.", duration: "1 Min", typicalMistake: "Honig/Zucker draufkippen → macht's zur Dessertbombe. Obst liefert genug natürliche Süße." },
+    ],
   },
 ];
 
@@ -411,57 +473,54 @@ export const meals: Meal[] = [...breakfastMeals, ...dinnerMeals];
 // ============================================
 
 export const breakfastShoppingList: ShoppingItem[] = [
-  // Frisches - Hauptgericht
-  { name: "Avocados", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Paprika (Speca)", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Spinat", amount: "1 Bund/Packung", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Petersilie", amount: "1 Bund", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Dill", amount: "1 Bund", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Beeren", amount: "200g", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Äpfel", amount: "2 Stück", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Zucchini", amount: "1 Stück", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Aubergine", amount: "1 Stück", category: "fresh", checked: false, mealType: "breakfast" },
+  // === FRISCHES GEMÜSE & OBST ===
+  // Hauptzutaten
+  { name: "Avocado", amount: "1 Stück", category: "fresh", checked: false, mealType: "breakfast" },
   { name: "Zwiebel", amount: "1 Stück", category: "fresh", checked: false, mealType: "breakfast" },
-  { name: "Zitrone", amount: "2 Stück", category: "fresh", checked: false, mealType: "breakfast" },
-  // Frisches - Beilagen
-  { name: "Cherry-Tomaten", amount: "2 Packungen", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
-  { name: "Tomaten (groß)", amount: "3-4 Stück", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
-  { name: "Gurke", amount: "2 Stück", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
-  { name: "Minze", amount: "1 Bund", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
+  { name: "Paprika", amount: "1 Stück", category: "fresh", checked: false, mealType: "breakfast" },
+  { name: "Knoblauch", amount: "1 Knolle", category: "fresh", checked: false, mealType: "breakfast" },
+  { name: "Zitronen", amount: "5-6 Stück", category: "fresh", checked: false, mealType: "breakfast" },
+  { name: "Äpfel oder Beeren", amount: "2 Äpfel / 200g Beeren", category: "fresh", checked: false, mealType: "breakfast" },
+  // Kräuter
+  { name: "Petersilie", amount: "2 Bund", category: "fresh", checked: false, mealType: "breakfast" },
+  { name: "Dill", amount: "2 Bund", category: "fresh", checked: false, mealType: "breakfast" },
+  { name: "Schnittlauch", amount: "1 Bund", category: "fresh", checked: false, mealType: "breakfast" },
+  { name: "Frühlingszwiebel", amount: "1 Bund (optional)", category: "fresh", checked: false, mealType: "breakfast" },
+  // Beilagen/Salat
+  { name: "Tomaten", amount: "6-8 Stück", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
+  { name: "Gurken", amount: "5-6 Stück", category: "fresh", checked: false, mealType: "breakfast", forSideDish: true },
 
-  // Proteine - Hauptgericht
-  { name: "Eier", amount: "12-16 Stück", category: "protein", checked: false, mealType: "breakfast" },
-  { name: "Räucherlachs", amount: "100g", category: "protein", checked: false, mealType: "breakfast" },
-  // Proteine - Beilagen
-  { name: "Putenschinken", amount: "100g", category: "protein", checked: false, mealType: "breakfast", forSideDish: true },
+  // === PROTEINE ===
+  { name: "Eier", amount: "18-24 Stück", category: "protein", checked: false, mealType: "breakfast" },
+  { name: "Räucherlachs", amount: "150-200g", category: "protein", checked: false, mealType: "breakfast" },
 
-  // Milchprodukte - Hauptgericht
-  { name: "Skyr/Magerquark", amount: "500g", category: "dairy", checked: false, mealType: "breakfast" },
-  { name: "Feta/Sirene", amount: "200g", category: "dairy", checked: false, mealType: "breakfast" },
-  { name: "Frischkäse (leicht)", amount: "1 Packung", category: "dairy", checked: false, mealType: "breakfast" },
-  // Milchprodukte - Beilagen
-  { name: "Joghurt (natur)", amount: "500g", category: "dairy", checked: false, mealType: "breakfast", forSideDish: true },
+  // === MILCHPRODUKTE ===
+  { name: "Magerquark", amount: "500-600g", category: "dairy", checked: false, mealType: "breakfast" },
+  { name: "Skyr oder Quark", amount: "250g", category: "dairy", checked: false, mealType: "breakfast" },
+  { name: "Milch oder Joghurt", amount: "400ml", category: "dairy", checked: false, mealType: "breakfast" },
 
-  // Beilagen - alle für Beilagen
-  { name: "Vollkorn-Toast", amount: "2 Packungen", category: "grains", checked: false, mealType: "breakfast" },
-  { name: "Baguette", amount: "1 Stück", category: "grains", checked: false, mealType: "breakfast" },
-  { name: "Wraps/Tortillas", amount: "1 Packung", category: "grains", checked: false, mealType: "breakfast" },
+  // === BEILAGEN & VOLLKORN ===
+  { name: "Vollkorn-Toast/Brot", amount: "2 Packungen", category: "grains", checked: false, mealType: "breakfast" },
+  { name: "Haferflocken", amount: "100g", category: "grains", checked: false, mealType: "breakfast" },
+  { name: "Naturreis (gekocht)", amount: "2-3 Tassen", category: "grains", checked: false, mealType: "breakfast" },
 
-  // Basics - Hauptgericht
+  // === BASICS & SAUCEN ===
   { name: "Olivenöl", amount: "1 Flasche", category: "basics", checked: false, mealType: "both" },
-  { name: "Ajvar", amount: "1 Glas", category: "basics", checked: false, mealType: "breakfast" },
-  { name: "Tomatensauce", amount: "1 Dose/Glas", category: "basics", checked: false, mealType: "breakfast" },
-  // Basics - Beilagen
+  { name: "Butter", amount: "1 Stück (klein)", category: "basics", checked: false, mealType: "breakfast" },
+  { name: "Tomaten (Dose)", amount: "1 Dose (400g)", category: "basics", checked: false, mealType: "breakfast" },
+  { name: "Sojasauce", amount: "1 Flasche", category: "basics", checked: false, mealType: "breakfast" },
+  // Beilagen
   { name: "Oliven", amount: "1 Glas", category: "basics", checked: false, mealType: "breakfast", forSideDish: true },
-  { name: "Dijon-Senf", amount: "1 Glas", category: "basics", checked: false, mealType: "breakfast", forSideDish: true },
 
-  // Extras - alle für Hauptgerichte
-  { name: "Walnüsse", amount: "100g", category: "extras", checked: false, mealType: "breakfast" },
-  { name: "Honig", amount: "1 Glas", category: "extras", checked: false, mealType: "breakfast" },
-  { name: "Pfeffer", amount: "1 Mühle", category: "extras", checked: false, mealType: "both" },
+  // === GEWÜRZE & EXTRAS ===
+  { name: "Pfeffer (Mühle)", amount: "1 Stück", category: "extras", checked: false, mealType: "both" },
+  { name: "Kreuzkümmel", amount: "1 Dose", category: "extras", checked: false, mealType: "breakfast" },
+  { name: "Paprika Gewürz", amount: "1 Dose", category: "extras", checked: false, mealType: "breakfast" },
+  { name: "Chili (optional)", amount: "1 Dose", category: "extras", checked: false, mealType: "breakfast" },
   { name: "Zimt", amount: "1 Dose", category: "extras", checked: false, mealType: "breakfast" },
-  { name: "Thymian (getrocknet)", amount: "1 Dose", category: "extras", checked: false, mealType: "both" },
-  { name: "Oregano", amount: "1 Dose", category: "extras", checked: false, mealType: "both" },
+  { name: "Sesam (optional)", amount: "1 Packung", category: "extras", checked: false, mealType: "breakfast" },
+  { name: "Walnüsse", amount: "100g", category: "extras", checked: false, mealType: "breakfast" },
+  { name: "Leinsamen", amount: "1 Packung", category: "extras", checked: false, mealType: "breakfast" },
 ];
 
 export const dinnerShoppingList: ShoppingItem[] = [
@@ -525,50 +584,47 @@ export const dinnerShoppingList: ShoppingItem[] = [
 export const unifiedShoppingList: ShoppingItem[] = [
   // === FRISCHES GEMÜSE & OBST ===
   // Hauptzutaten
-  { name: "Avocados", amount: "3-4 Stück", category: "fresh", checked: false },
-  { name: "Paprika (gemischt)", amount: "8-10 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
-  { name: "Zucchini", amount: "5-6 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
-  { name: "Aubergine", amount: "1-2 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
-  { name: "Spinat", amount: "1-2 Packungen", category: "fresh", checked: false },
+  { name: "Avocado", amount: "1 Stück", category: "fresh", checked: false },
+  { name: "Paprika (gemischt)", amount: "7-9 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Zucchini", amount: "4-5 Stück", category: "fresh", checked: false }, // Abendessen
+  { name: "Aubergine", amount: "1 Stück", category: "fresh", checked: false }, // Abendessen
   { name: "Brokkoli", amount: "1 Stück", category: "fresh", checked: false },
   { name: "Karotten", amount: "6-8 Stück", category: "fresh", checked: false },
-  { name: "Zwiebeln", amount: "7-9 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
-  { name: "Knoblauch", amount: "1-2 Knollen", category: "fresh", checked: false },
+  { name: "Zwiebeln", amount: "7-8 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Knoblauch", amount: "2 Knollen", category: "fresh", checked: false }, // Frühstück + Abendessen
   { name: "Rucola", amount: "1-2 Packungen", category: "fresh", checked: false },
   { name: "Ingwer", amount: "1 Stück", category: "fresh", checked: false },
-  { name: "Beeren (frisch/TK)", amount: "200g", category: "fresh", checked: false },
-  { name: "Äpfel", amount: "2 Stück", category: "fresh", checked: false },
-  { name: "Zitronen", amount: "8-10 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Äpfel oder Beeren", amount: "2 Äpfel / 200g Beeren", category: "fresh", checked: false },
+  { name: "Zitronen", amount: "10-12 Stück", category: "fresh", checked: false }, // Frühstück + Abendessen kombiniert
   // Kräuter
-  { name: "Petersilie", amount: "3 Bund", category: "fresh", checked: false }, // Frühstück + Abendessen
-  { name: "Dill", amount: "2 Bund", category: "fresh", checked: false }, // Frühstück + Abendessen
-  { name: "Minze", amount: "1-2 Bund", category: "fresh", checked: false }, // Frühstück + Abendessen
-  { name: "Thymian/Oregano (frisch)", amount: "1 Bund", category: "fresh", checked: false },
+  { name: "Petersilie", amount: "4 Bund", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Dill", amount: "3-4 Bund", category: "fresh", checked: false }, // Frühstück + Abendessen
+  { name: "Schnittlauch", amount: "1 Bund", category: "fresh", checked: false },
+  { name: "Minze", amount: "1-2 Bund", category: "fresh", checked: false }, // Abendessen
+  { name: "Frühlingszwiebel", amount: "1 Bund (optional)", category: "fresh", checked: false },
   // Beilagen/Salat
-  { name: "Tomaten (groß)", amount: "10-12 Stück", category: "fresh", checked: false, forSideDish: true }, // Frühstück + Abendessen
-  { name: "Cherry-Tomaten", amount: "2 Packungen", category: "fresh", checked: false, forSideDish: true },
-  { name: "Gurken", amount: "4-5 Stück", category: "fresh", checked: false, forSideDish: true }, // Frühstück + Abendessen
+  { name: "Tomaten", amount: "14-16 Stück", category: "fresh", checked: false, forSideDish: true }, // Frühstück + Abendessen
+  { name: "Cherry-Tomaten", amount: "1 Packung", category: "fresh", checked: false, forSideDish: true },
+  { name: "Gurken", amount: "8-10 Stück", category: "fresh", checked: false, forSideDish: true }, // Frühstück + Abendessen
   { name: "Rotkohl oder Salat", amount: "1 Stück", category: "fresh", checked: false, forSideDish: true },
   { name: "Kartoffeln", amount: "1 kg", category: "fresh", checked: false, forSideDish: true },
 
   // === FLEISCH & FISCH ===
   // Hauptzutaten
-  { name: "Eier", amount: "12-18 Stück", category: "protein", checked: false },
+  { name: "Eier", amount: "24-30 Stück", category: "protein", checked: false }, // Frühstück braucht viele Eier
   { name: "Hähnchenbrust", amount: "1.1-1.3 kg", category: "protein", checked: false },
   { name: "Rinderhack", amount: "350-450g", category: "protein", checked: false },
   { name: "Lachsfilets", amount: "2 Stück (300-400g)", category: "protein", checked: false },
-  { name: "Räucherlachs", amount: "100g", category: "protein", checked: false },
+  { name: "Räucherlachs", amount: "150-200g", category: "protein", checked: false },
   { name: "Tofu (optional)", amount: "300-400g", category: "protein", checked: false },
-  // Beilagen
-  { name: "Putenschinken", amount: "100g", category: "protein", checked: false, forSideDish: true },
 
   // === MILCHPRODUKTE ===
   // Hauptzutaten
-  { name: "Skyr/Magerquark", amount: "500g", category: "dairy", checked: false },
-  { name: "Feta/Sirene", amount: "350-400g", category: "dairy", checked: false }, // Frühstück + Abendessen
-  { name: "Frischkäse (leicht)", amount: "1 Packung", category: "dairy", checked: false },
+  { name: "Magerquark/Skyr", amount: "800-1000g", category: "dairy", checked: false }, // Frühstück kombiniert
+  { name: "Feta", amount: "150-200g", category: "dairy", checked: false }, // Abendessen
+  { name: "Milch oder Joghurt", amount: "400ml", category: "dairy", checked: false },
   // Beilagen/Dips
-  { name: "Joghurt (natur)", amount: "2-2.5 kg", category: "dairy", checked: false, forSideDish: true }, // Frühstück + Abendessen kombiniert
+  { name: "Joghurt (natur)", amount: "1.5-2 kg", category: "dairy", checked: false, forSideDish: true }, // Abendessen Dips
 
   // === HÜLSENFRÜCHTE ===
   { name: "Kichererbsen (Dosen)", amount: "3 Dosen", category: "legumes", checked: false },
@@ -576,35 +632,31 @@ export const unifiedShoppingList: ShoppingItem[] = [
 
   // === BEILAGEN & VOLLKORN ===
   // Frühstück
-  { name: "Vollkorn-Toast", amount: "2 Packungen", category: "grains", checked: false },
-  { name: "Baguette", amount: "1 Stück", category: "grains", checked: false },
-  { name: "Wraps/Tortillas", amount: "1 Packung", category: "grains", checked: false },
+  { name: "Vollkorn-Toast/Brot", amount: "3 Packungen", category: "grains", checked: false }, // Frühstück braucht mehr
+  { name: "Haferflocken", amount: "100g", category: "grains", checked: false },
+  { name: "Naturreis", amount: "700-800g", category: "grains", checked: false }, // Frühstück + Abendessen
   // Abendessen
   { name: "Vollkorn-Bulgur", amount: "500g", category: "grains", checked: false, forSideDish: true },
-  { name: "Vollkornreis/Naturreis", amount: "500g", category: "grains", checked: false, forSideDish: true },
   { name: "Vollkornpasta", amount: "500g", category: "grains", checked: false },
   { name: "Vollkorn-Fladenbrot (optional)", amount: "1 Packung", category: "grains", checked: false, forSideDish: true },
 
   // === BASICS & SAUCEN ===
   { name: "Olivenöl", amount: "1 Flasche", category: "basics", checked: false },
-  { name: "Ajvar", amount: "1 Glas", category: "basics", checked: false },
-  { name: "Tomatensauce", amount: "1 Dose/Glas", category: "basics", checked: false },
+  { name: "Butter", amount: "1 Stück (klein)", category: "basics", checked: false },
+  { name: "Tomaten (Dose)", amount: "2 Dosen (400g)", category: "basics", checked: false }, // Frühstück + Abendessen
   { name: "Tahini", amount: "1 Glas", category: "basics", checked: false, forSideDish: true },
   { name: "Sojasauce", amount: "1 Flasche", category: "basics", checked: false },
   // Beilagen
   { name: "Oliven", amount: "1 Glas", category: "basics", checked: false, forSideDish: true },
-  { name: "Dijon-Senf", amount: "1 Glas", category: "basics", checked: false, forSideDish: true },
 
   // === GEWÜRZE & EXTRAS ===
-  { name: "Walnüsse", amount: "100g", category: "extras", checked: false },
-  { name: "Honig", amount: "1 Glas", category: "extras", checked: false },
+  { name: "Walnüsse", amount: "150g", category: "extras", checked: false },
+  { name: "Leinsamen", amount: "1 Packung", category: "extras", checked: false },
   { name: "Pfeffer (Mühle)", amount: "1 Stück", category: "extras", checked: false },
   { name: "Zimt", amount: "1 Dose", category: "extras", checked: false },
   { name: "Kreuzkümmel", amount: "1 Dose", category: "extras", checked: false },
-  { name: "Paprika edelsüß", amount: "1 Dose", category: "extras", checked: false },
+  { name: "Paprika edelsüß/Gewürz", amount: "1 Dose", category: "extras", checked: false },
   { name: "Kurkuma", amount: "1 Dose", category: "extras", checked: false },
-  { name: "Thymian (getrocknet)", amount: "1 Dose", category: "extras", checked: false },
-  { name: "Oregano (getrocknet)", amount: "1 Dose", category: "extras", checked: false },
   { name: "Kräuter der Provence", amount: "1 Dose", category: "extras", checked: false },
   { name: "Chili (optional)", amount: "1 Dose", category: "extras", checked: false },
   { name: "Sesam (optional)", amount: "1 Packung", category: "extras", checked: false },
