@@ -14,13 +14,30 @@ import {
   requestNotificationPermission,
 } from '@/utils/callNotifications';
 
-// Free STUN servers for NAT traversal
+// ICE Servers for NAT traversal - includes TURN for restrictive networks
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
+    // STUN servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
+    // Free TURN servers from Open Relay Project
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 // Generate or retrieve a unique call user ID (separate from device ID)
@@ -77,9 +94,25 @@ export function useCall(senderName: string): UseCallReturn {
   const deviceIdRef = useRef<string>(getDeviceId());
   const callUserIdRef = useRef<string>(callUserId);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const callStateRef = useRef<CallState>('idle');
+
+  // Call timeout duration (30 seconds)
+  const CALL_TIMEOUT = 30000;
+
+  // Keep callStateRef in sync
+  useEffect(() => {
+    callStateRef.current = callState;
+  }, [callState]);
 
   // Cleanup function
   const cleanup = useCallback(() => {
+    // Clear call timeout
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
+
     // Stop all sounds
     stopIncomingCallAlert();
     stopDialTone();
@@ -101,57 +134,78 @@ export function useCall(senderName: string): UseCallReturn {
     setIncomingCall(null);
     setIsMuted(false);
     setIsVideoOff(false);
+    setError(null);
     pendingCandidatesRef.current = [];
   }, [localStream]);
 
-  // Send signal to database
+  // Send signal to database with retry logic
   const sendSignal = useCallback(async (
     targetCallUserId: string,
     signalType: CallSignal['signalType'],
     callType: CallType,
-    signalData?: RTCSessionDescriptionInit | RTCIceCandidateInit | null
+    signalData?: RTCSessionDescriptionInit | RTCIceCandidateInit | null,
+    retries = 3
   ) => {
     const deviceId = deviceIdRef.current;
     const myCallUserId = callUserIdRef.current;
     if (!deviceId || !myCallUserId) return;
 
-    try {
-      await supabase.from('call_signals').insert({
-        device_id: deviceId,
-        target_device_id: targetCallUserId, // Using call_user_id as target
-        caller_name: senderName || 'Anonym',
-        signal_type: signalType,
-        call_type: callType,
-        signal_data: signalData ? { ...signalData, from_call_user_id: myCallUserId } : { from_call_user_id: myCallUserId },
-      });
-    } catch (e) {
-      console.warn('Failed to send signal:', e);
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const { error } = await supabase.from('call_signals').insert({
+          device_id: deviceId,
+          target_device_id: targetCallUserId,
+          caller_name: senderName || 'Anonym',
+          signal_type: signalType,
+          call_type: callType,
+          signal_data: signalData ? { ...signalData, from_call_user_id: myCallUserId } : { from_call_user_id: myCallUserId },
+        });
+
+        if (error) throw error;
+        return; // Success
+      } catch (e) {
+        console.warn(`Failed to send signal (attempt ${attempt}/${retries}):`, e);
+        if (attempt < retries) {
+          // Exponential backoff: 100ms, 200ms, 400ms
+          await new Promise(r => setTimeout(r, 100 * Math.pow(2, attempt - 1)));
+        }
+      }
     }
+    console.error('Failed to send signal after all retries');
   }, [senderName]);
 
-  // Broadcast to all family members (using device_id as broadcast channel)
+  // Broadcast to all family members (using device_id as broadcast channel) with retry
   const broadcastSignal = useCallback(async (
     signalType: CallSignal['signalType'],
     callType: CallType,
-    signalData?: RTCSessionDescriptionInit | RTCIceCandidateInit | null
+    signalData?: RTCSessionDescriptionInit | RTCIceCandidateInit | null,
+    retries = 3
   ) => {
     const deviceId = deviceIdRef.current;
     const myCallUserId = callUserIdRef.current;
     if (!deviceId || !myCallUserId) return;
 
-    try {
-      // Use device_id as target to broadcast to all family members
-      await supabase.from('call_signals').insert({
-        device_id: myCallUserId, // Sender's call_user_id
-        target_device_id: deviceId, // Broadcast to device_id (all family members listen)
-        caller_name: senderName || 'Anonym',
-        signal_type: signalType,
-        call_type: callType,
-        signal_data: signalData ? { ...signalData, from_call_user_id: myCallUserId } : { from_call_user_id: myCallUserId },
-      });
-    } catch (e) {
-      console.warn('Failed to broadcast signal:', e);
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const { error } = await supabase.from('call_signals').insert({
+          device_id: myCallUserId,
+          target_device_id: deviceId,
+          caller_name: senderName || 'Anonym',
+          signal_type: signalType,
+          call_type: callType,
+          signal_data: signalData ? { ...signalData, from_call_user_id: myCallUserId } : { from_call_user_id: myCallUserId },
+        });
+
+        if (error) throw error;
+        return; // Success
+      } catch (e) {
+        console.warn(`Failed to broadcast signal (attempt ${attempt}/${retries}):`, e);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 100 * Math.pow(2, attempt - 1)));
+        }
+      }
     }
+    console.error('Failed to broadcast signal after all retries');
   }, [senderName]);
 
   // Create peer connection
@@ -215,6 +269,14 @@ export function useCall(senderName: string): UseCallReturn {
     try {
       // Start dial tone (ringback tone)
       startDialTone();
+
+      // Set timeout for unanswered calls
+      callTimeoutRef.current = setTimeout(() => {
+        if (callStateRef.current === 'calling') {
+          setError('Keine Antwort - Anruf abgebrochen');
+          cleanup();
+        }
+      }, CALL_TIMEOUT);
 
       // Broadcast call request to all family members
       await broadcastSignal('call-request', callType);
@@ -450,6 +512,20 @@ export function useCall(senderName: string): UseCallReturn {
           await peerConnectionRef.current.setRemoteDescription(
             new RTCSessionDescription(sdp)
           );
+
+          // CRITICAL FIX: Process pending ICE candidates after setting remote description
+          // This was missing and caused call failures!
+          if (pendingCandidatesRef.current.length > 0) {
+            console.log(`Processing ${pendingCandidatesRef.current.length} pending ICE candidates`);
+            for (const candidate of pendingCandidatesRef.current) {
+              try {
+                await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+              } catch (e) {
+                console.warn('Failed to add pending ICE candidate:', e);
+              }
+            }
+            pendingCandidatesRef.current = [];
+          }
         }
         break;
 
@@ -460,10 +536,21 @@ export function useCall(senderName: string): UseCallReturn {
           delete candidateData.from_call_user_id;
           const candidate = candidateData as unknown as RTCIceCandidateInit;
 
+          // Validate candidate before processing
+          if (!candidate || (!candidate.candidate && !candidate.sdpMid && candidate.sdpMLineIndex === undefined)) {
+            console.warn('Invalid ICE candidate received, skipping');
+            break;
+          }
+
           if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
-            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+            try {
+              await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (e) {
+              // Don't crash on invalid candidates - just log and continue
+              console.warn('Failed to add ICE candidate:', e);
+            }
           } else {
-            // Queue candidate for later
+            // Queue candidate for later processing
             pendingCandidatesRef.current.push(candidate);
           }
         }
