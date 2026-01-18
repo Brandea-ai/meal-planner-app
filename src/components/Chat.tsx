@@ -18,6 +18,9 @@ import {
   Video,
   Shield,
   LogOut,
+  Smartphone,
+  Lock,
+  Settings,
 } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { useCall } from '@/hooks/useCall';
@@ -26,6 +29,8 @@ import { MealType, ChatMessage } from '@/types';
 import { IncomingCall } from './IncomingCall';
 import { ActiveCall } from './ActiveCall';
 import { PasswordSetup } from './PasswordSetup';
+import { DeviceSync } from './DeviceSync';
+import { getDeviceId } from '@/lib/supabase';
 
 interface ChatProps {
   onBack: () => void;
@@ -94,9 +99,36 @@ export function Chat({ onBack }: ChatProps) {
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [activeMessageMenu, setActiveMessageMenu] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDeviceSync, setShowDeviceSync] = useState(false);
+  const [showEncryptionSetup, setShowEncryptionSetup] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Swipe to go back - MUST be defined before any conditional returns
+  const handleTouchStartSwipe = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (touch.clientX < 30) {
+      (e.currentTarget as HTMLElement).dataset.swipeStartX = String(touch.clientX);
+    }
+  }, []);
+
+  const handleTouchMoveSwipe = useCallback((e: React.TouchEvent) => {
+    const startX = Number((e.currentTarget as HTMLElement).dataset.swipeStartX);
+    if (!startX) return;
+
+    const touch = e.touches[0];
+    const diff = touch.clientX - startX;
+    if (diff > 100) {
+      onBack();
+      (e.currentTarget as HTMLElement).dataset.swipeStartX = '';
+    }
+  }, [onBack]);
+
+  const handleTouchEndSwipe = useCallback(() => {
+    // Reset swipe tracking - using a ref pattern instead
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -218,13 +250,40 @@ export function Chat({ onBack }: ChatProps) {
     return groups;
   }, {} as Record<string, typeof messages>);
 
-  if (needsPassword || (!isPasswordSetup && !isEncrypted)) {
+  // Handle device sync
+  const handleDeviceSync = (newDeviceId: string) => {
+    // Store the new device ID
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('meal-planner-device-id', newDeviceId);
+    }
+    setShowDeviceSync(false);
+    // Refresh chat to load messages from new device
+    refreshChat();
+  };
+
+  // Only show password screen if user needs to enter existing password
+  // NOT for first-time setup (that's optional now)
+  if (needsPassword && isPasswordSetup) {
     return (
       <PasswordSetup
-        isNewSetup={!isPasswordSetup}
+        isNewSetup={false}
         onPasswordSet={setPassword}
         verifyPassword={verifyPassword}
         onBack={onBack}
+      />
+    );
+  }
+
+  // Show encryption setup screen if user chose to set it up
+  if (showEncryptionSetup) {
+    return (
+      <PasswordSetup
+        isNewSetup={true}
+        onPasswordSet={(pwd) => {
+          setPassword(pwd);
+          setShowEncryptionSetup(false);
+        }}
+        onBack={() => setShowEncryptionSetup(false)}
       />
     );
   }
@@ -273,30 +332,6 @@ export function Chat({ onBack }: ChatProps) {
       </div>
     );
   }
-
-  // Swipe to go back
-  const handleTouchStartSwipe = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    if (touch.clientX < 30) { // Only from left edge
-      (e.currentTarget as HTMLElement).dataset.swipeStartX = String(touch.clientX);
-    }
-  }, []);
-
-  const handleTouchMoveSwipe = useCallback((e: React.TouchEvent) => {
-    const startX = Number((e.currentTarget as HTMLElement).dataset.swipeStartX);
-    if (!startX) return;
-
-    const touch = e.touches[0];
-    const diff = touch.clientX - startX;
-    if (diff > 100) {
-      onBack();
-      (e.currentTarget as HTMLElement).dataset.swipeStartX = '';
-    }
-  }, [onBack]);
-
-  const handleTouchEndSwipe = useCallback((e: React.TouchEvent) => {
-    (e.currentTarget as HTMLElement).dataset.swipeStartX = '';
-  }, []);
 
   return (
     <div
@@ -358,17 +393,99 @@ export function Chat({ onBack }: ChatProps) {
             >
               <Video size={16} />
             </motion.button>
-            <motion.button
-              onClick={() => setShowNameInput(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-full glass-inner"
-              aria-label="Profil"
-              whileTap={{ scale: 0.95 }}
-            >
-              <User size={16} className="text-[var(--foreground-secondary)]" />
-            </motion.button>
+            <div className="relative">
+              <motion.button
+                onClick={() => setShowSettings(!showSettings)}
+                className="flex h-9 w-9 items-center justify-center rounded-full glass-inner"
+                aria-label="Einstellungen"
+                whileTap={{ scale: 0.95 }}
+              >
+                <Settings size={16} className="text-[var(--foreground-secondary)]" />
+              </motion.button>
+
+              {/* Settings Dropdown */}
+              <AnimatePresence>
+                {showSettings && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    className="absolute right-0 top-11 z-50 w-56 glass-card p-2 shadow-xl"
+                  >
+                    <button
+                      onClick={() => {
+                        setShowSettings(false);
+                        setShowDeviceSync(true);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-[10px] p-3 text-left transition-none active:bg-[var(--vibrancy-regular)]"
+                    >
+                      <Smartphone size={18} className="text-[var(--system-blue)]" />
+                      <div>
+                        <p className="text-sm font-medium text-[var(--foreground)]">Geräte verbinden</p>
+                        <p className="text-xs text-[var(--foreground-tertiary)]">Mit QR-Code synchronisieren</p>
+                      </div>
+                    </button>
+
+                    {!isEncrypted && (
+                      <button
+                        onClick={() => {
+                          setShowSettings(false);
+                          setShowEncryptionSetup(true);
+                        }}
+                        className="flex w-full items-center gap-3 rounded-[10px] p-3 text-left transition-none active:bg-[var(--vibrancy-regular)]"
+                      >
+                        <Lock size={18} className="text-[var(--system-green)]" />
+                        <div>
+                          <p className="text-sm font-medium text-[var(--foreground)]">Verschlüsselung aktivieren</p>
+                          <p className="text-xs text-[var(--foreground-tertiary)]">Chat mit Passwort schützen</p>
+                        </div>
+                      </button>
+                    )}
+
+                    {isEncrypted && (
+                      <button
+                        onClick={() => {
+                          setShowSettings(false);
+                          logout();
+                        }}
+                        className="flex w-full items-center gap-3 rounded-[10px] p-3 text-left transition-none active:bg-[var(--vibrancy-regular)]"
+                      >
+                        <LogOut size={18} className="text-[var(--system-red)]" />
+                        <div>
+                          <p className="text-sm font-medium text-[var(--foreground)]">Abmelden</p>
+                          <p className="text-xs text-[var(--foreground-tertiary)]">Verschlüsselung zurücksetzen</p>
+                        </div>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setShowSettings(false);
+                        setShowNameInput(true);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-[10px] p-3 text-left transition-none active:bg-[var(--vibrancy-regular)]"
+                    >
+                      <User size={18} className="text-[var(--foreground-secondary)]" />
+                      <div>
+                        <p className="text-sm font-medium text-[var(--foreground)]">Name ändern</p>
+                        <p className="text-xs text-[var(--foreground-tertiary)]">{senderName || 'Nicht gesetzt'}</p>
+                      </div>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Settings overlay to close dropdown */}
+      {showSettings && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowSettings(false)}
+        />
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -842,6 +959,14 @@ export function Chat({ onBack }: ChatProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Device Sync Modal */}
+      {showDeviceSync && (
+        <DeviceSync
+          onSync={handleDeviceSync}
+          onClose={() => setShowDeviceSync(false)}
+        />
+      )}
     </div>
   );
 }
