@@ -378,22 +378,23 @@ export function ShoppingList() {
                 </motion.button>
 
                 <div className="flex items-center gap-2">
-                  {/* Add Button */}
+                  {/* Add Button - Clear label */}
                   <motion.button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleStartAddToCategory(category);
                     }}
-                    className="flex h-8 w-8 items-center justify-center rounded-full"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium"
                     style={{
                       backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)`,
                       color: categoryColor
                     }}
-                    whileTap={{ scale: 0.9 }}
-                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
                     aria-label={`Zu ${categoryLabels[category]} hinzufügen`}
                   >
-                    <Plus size={16} />
+                    <Plus size={14} />
+                    <span>Neu</span>
                   </motion.button>
 
                   <div className="glass-inner px-2.5 py-1 text-sm">
@@ -422,6 +423,66 @@ export function ShoppingList() {
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     className="overflow-hidden bg-[var(--vibrancy-thin)]"
                   >
+                    {/* Add Form - appears at TOP when clicked */}
+                    <AnimatePresence>
+                      {addingToCategory === category && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="px-5 pt-3 overflow-hidden"
+                        >
+                          <div className="p-3 bg-[var(--fill-secondary)] rounded-[12px] border-2" style={{ borderColor: categoryColor }}>
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ backgroundColor: categoryColor }}>
+                                <Plus size={12} className="text-white" />
+                              </div>
+                              <span className="font-semibold text-sm" style={{ color: categoryColor }}>
+                                Neue Zutat hinzufügen
+                              </span>
+                            </div>
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={newCategoryItem.name}
+                                onChange={(e) => setNewCategoryItem({ ...newCategoryItem, name: e.target.value })}
+                                placeholder="Name der Zutat"
+                                autoFocus
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddToCategory()}
+                                className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2.5 text-[14px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                              />
+                              <input
+                                type="text"
+                                value={newCategoryItem.amount}
+                                onChange={(e) => setNewCategoryItem({ ...newCategoryItem, amount: e.target.value })}
+                                placeholder="Menge (z.B. 200g, 1 Stück)"
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddToCategory()}
+                                className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2.5 text-[14px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                              />
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <motion.button
+                                onClick={handleCancelAddToCategory}
+                                className="flex-1 py-2.5 rounded-[10px] bg-[var(--fill-tertiary)] text-[var(--foreground-secondary)] font-semibold text-sm"
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                Abbrechen
+                              </motion.button>
+                              <motion.button
+                                onClick={handleAddToCategory}
+                                disabled={!newCategoryItem.name.trim()}
+                                className="flex-1 py-2.5 rounded-[10px] text-white font-semibold text-sm disabled:opacity-50"
+                                style={{ backgroundColor: categoryColor }}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                Hinzufügen
+                              </motion.button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     <div className="pb-3">
                       {(() => {
                         const mainItems = getCategoryMainItems(category);
@@ -623,57 +684,7 @@ export function ShoppingList() {
                         </>
                       )}
 
-                      {/* Add Form (appears when add button clicked) */}
-                      <AnimatePresence>
-                        {addingToCategory === category && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="px-5 pb-3 overflow-hidden"
-                          >
-                            <div className="p-3 bg-[var(--fill-secondary)] rounded-[12px]">
-                              <div className="space-y-2">
-                                <input
-                                  type="text"
-                                  value={newCategoryItem.name}
-                                  onChange={(e) => setNewCategoryItem({ ...newCategoryItem, name: e.target.value })}
-                                  placeholder="Zutat Name"
-                                  autoFocus
-                                  onKeyDown={(e) => e.key === 'Enter' && handleAddToCategory()}
-                                  className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
-                                />
-                                <input
-                                  type="text"
-                                  value={newCategoryItem.amount}
-                                  onChange={(e) => setNewCategoryItem({ ...newCategoryItem, amount: e.target.value })}
-                                  placeholder="Menge (z.B. 200g)"
-                                  onKeyDown={(e) => e.key === 'Enter' && handleAddToCategory()}
-                                  className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
-                                />
-                              </div>
-                              <div className="flex gap-2 mt-3">
-                                <motion.button
-                                  onClick={handleCancelAddToCategory}
-                                  className="flex-1 py-2.5 rounded-[8px] bg-[var(--fill-tertiary)] text-[var(--foreground-secondary)] font-medium text-sm"
-                                  whileTap={{ scale: 0.98 }}
-                                >
-                                  Abbrechen
-                                </motion.button>
-                                <motion.button
-                                  onClick={handleAddToCategory}
-                                  disabled={!newCategoryItem.name.trim()}
-                                  className="flex-1 py-2.5 rounded-[8px] bg-[var(--system-blue)] text-white font-medium text-sm disabled:opacity-50"
-                                  whileTap={{ scale: 0.98 }}
-                                >
-                                  Hinzufügen
-                                </motion.button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                      </div>
                   </motion.div>
                 )}
               </AnimatePresence>
