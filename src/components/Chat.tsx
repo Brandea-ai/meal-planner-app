@@ -31,6 +31,7 @@ import { ActiveCall } from './ActiveCall';
 import { PasswordSetup } from './PasswordSetup';
 import { DeviceSync } from './DeviceSync';
 import { getDeviceId } from '@/lib/supabase';
+import { resetEncryption } from '@/lib/crypto';
 
 interface ChatProps {
   onBack: () => void;
@@ -477,8 +478,12 @@ export function Chat({ onBack }: ChatProps) {
                     <button
                       onClick={() => {
                         if (confirm('Alle lokalen Daten löschen? Du musst dich danach neu verbinden.')) {
+                          // Reset encryption first
+                          resetEncryption();
+                          // Clear all storage
                           localStorage.clear();
                           sessionStorage.clear();
+                          // Reload
                           window.location.reload();
                         }
                       }}

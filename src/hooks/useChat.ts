@@ -49,8 +49,6 @@ export function useChat(): UseChatReturn {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [isPasswordSetup, setIsPasswordSetup] = useState(false);
   const [password, setPasswordState] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [hasEncryptedMessages, setHasEncryptedMessages] = useState(false);
   const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
 
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -63,32 +61,6 @@ export function useChat(): UseChatReturn {
   const lastActivityRef = useRef<number>(Date.now());
   const logoutTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Check if there are existing encrypted messages in the database
-  const checkForEncryptedMessages = useCallback(async (deviceId: string): Promise<boolean> => {
-    try {
-      const { data } = await supabase
-        .from('chat_messages')
-        .select('message')
-        .eq('device_id', deviceId)
-        .limit(1);
-
-      if (data && data.length > 0) {
-        const msg = data[0].message;
-        // Check if message looks like base64 encrypted data (not plain text)
-        // Encrypted messages are base64 and typically start with letters/numbers
-        // and don't contain normal sentence patterns
-        const isEncrypted = /^[A-Za-z0-9+/=]{20,}$/.test(msg);
-        if (isEncrypted) {
-          firstMessageRef.current = msg;
-        }
-        return isEncrypted;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }, []);
 
   // State to track initialization complete
   const [initComplete, setInitComplete] = useState(false);
@@ -106,31 +78,25 @@ export function useChat(): UseChatReturn {
       const hasLocalSetup = hasPasswordSetup();
       const storedPassword = getStoredPassword();
 
-      // Check if there are encrypted messages in database
-      const hasExistingEncrypted = await checkForEncryptedMessages(deviceId);
-      setHasEncryptedMessages(hasExistingEncrypted);
-
       if (storedPassword) {
-        // User has password in session - go directly to chat
+        // User has password in session - go directly to chat with encryption
         passwordRef.current = storedPassword;
         setPasswordState(storedPassword);
         setNeedsPassword(false);
         setIsPasswordSetup(true);
-        setShouldLoadMessages(true); // Signal to load messages
+        setShouldLoadMessages(true);
       } else if (hasLocalSetup) {
-        // Local password hash exists - user set up encryption on THIS device
-        // They need to enter their password
+        // Local password hash exists - user set up encryption before
+        // They need to enter their password to decrypt messages
         setNeedsPassword(true);
         setIsPasswordSetup(true);
-        setIsLoading(false); // Not loading yet, waiting for password
+        setIsLoading(false);
       } else {
-        // No local password setup - allow direct access
-        // Even if there are encrypted messages from another device,
-        // this device hasn't set up encryption yet
-        // User can set up encryption from chat settings
+        // NO encryption setup - go directly to chat WITHOUT encryption
+        // This is the default state for new users
         setNeedsPassword(false);
         setIsPasswordSetup(false);
-        setShouldLoadMessages(true); // Can load messages without password
+        setShouldLoadMessages(true);
       }
       setInitComplete(true);
     };
