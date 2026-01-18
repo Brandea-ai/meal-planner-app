@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, getDeviceId, setDeviceId } from '@/lib/supabase';
+import { supabase, getDeviceId, setDeviceId, resetDeviceId } from '@/lib/supabase';
 import { UserProgress, UserPreferences } from '@/types';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -31,6 +31,7 @@ interface CloudSyncReturn {
   isLoaded: boolean;
   syncStatus: string | null;
   switchDevice: (newDeviceId: string) => Promise<void>;
+  resetSync: () => Promise<void>;
   deviceId: string;
 }
 
@@ -199,6 +200,15 @@ export function useCloudSync(): CloudSyncReturn {
     await loadData(newDeviceId);
   }, [loadData]);
 
+  // Reset sync (generate new device ID and start fresh)
+  const resetSync = useCallback(async () => {
+    setIsLoaded(false);
+    const newDeviceId = resetDeviceId();
+    setProgressState(defaultProgress);
+    localStorage.removeItem('meal-planner-progress');
+    await loadData(newDeviceId);
+  }, [loadData]);
+
   // Sync to cloud
   const syncToCloud = useCallback(async (newProgress: UserProgress) => {
     if (!deviceIdRef.current || isSyncing.current) return;
@@ -266,6 +276,7 @@ export function useCloudSync(): CloudSyncReturn {
     isLoaded,
     syncStatus,
     switchDevice,
+    resetSync,
     deviceId: currentDeviceId,
   };
 }

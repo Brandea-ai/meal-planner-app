@@ -34,3 +34,11 @@ export function setDeviceId(deviceId: string): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem('meal-planner-device-id', deviceId);
 }
+
+// Reset device ID (generates a new one for fresh sync)
+export function resetDeviceId(): string {
+  if (typeof window === 'undefined') return '';
+  const newDeviceId = crypto.randomUUID();
+  localStorage.setItem('meal-planner-device-id', newDeviceId);
+  return newDeviceId;
+}

@@ -27,6 +27,7 @@ interface AppContextType {
   startPlan: () => void;
   getCompletionPercentage: () => number;
   switchDevice: (deviceId: string) => Promise<void>;
+  resetSync: () => Promise<void>;
   // New: Ingredient management
   hideIngredient: (mealId: number, mealType: MealType, ingredientName: string) => void;
   showIngredient: (mealId: number, mealType: MealType, ingredientName: string) => void;
@@ -48,7 +49,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const { progress, setProgress, isLoaded, syncStatus, switchDevice, deviceId } = useCloudSync();
+  const { progress, setProgress, isLoaded, syncStatus, switchDevice, resetSync, deviceId } = useCloudSync();
 
   const completeDay = useCallback((day: number) => {
     setProgress((prev) => ({
@@ -326,6 +327,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     startPlan,
     getCompletionPercentage,
     switchDevice,
+    resetSync,
     hideIngredient,
     showIngredient,
     updateIngredientAmount,
@@ -342,7 +344,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }), [
     progress, isLoaded, syncStatus, deviceId, completeDay, uncompleteDay, setCurrentDay,
     updatePreferences, toggleShoppingItem, resetProgress, startPlan, getCompletionPercentage,
-    switchDevice, hideIngredient, showIngredient, updateIngredientAmount, updateIngredientName,
+    switchDevice, resetSync, hideIngredient, showIngredient, updateIngredientAmount, updateIngredientName,
     resetIngredientAmount, resetIngredientName, getIngredientCustomization, saveMealNote, getMealNote, deleteMealNote,
     addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem,
   ]);

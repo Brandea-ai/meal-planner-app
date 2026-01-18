@@ -54,7 +54,7 @@ const itemVariants = {
 };
 
 export function Settings() {
-  const { progress, syncStatus, deviceId, updatePreferences, resetProgress, switchDevice } = useApp();
+  const { progress, syncStatus, deviceId, updatePreferences, resetProgress, switchDevice, resetSync } = useApp();
   const { messages, exportChat } = useChat();
   const [showDeviceSync, setShowDeviceSync] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
@@ -78,6 +78,12 @@ export function Settings() {
     setShowDeviceSync(false);
     setSyncSuccess(true);
     setTimeout(() => setSyncSuccess(false), 3000);
+  };
+
+  const handleResetSync = async () => {
+    if (window.confirm('Möchtest du die Synchronisierung zurücksetzen? Du bekommst eine neue Geräte-ID und kannst dich neu verbinden.')) {
+      await resetSync();
+    }
   };
 
   const handleExportChat = () => {
@@ -208,6 +214,16 @@ export function Settings() {
               {!syncStatus && 'Verbinde...'}
             </span>
           </div>
+        </div>
+        {/* Reset Sync Button */}
+        <div className="border-t border-[var(--glass-border)] px-4 py-3">
+          <motion.button
+            onClick={handleResetSync}
+            className="w-full text-center text-sm font-medium text-[var(--system-orange)]"
+            whileTap={{ scale: 0.98 }}
+          >
+            Synchronisierung zurücksetzen
+          </motion.button>
         </div>
       </motion.section>
 
