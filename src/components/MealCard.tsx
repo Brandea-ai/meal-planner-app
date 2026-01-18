@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Clock, Globe, ChefHat, Sparkles, ListChecks } from 'lucide-react';
-import { Meal, MealType } from '@/types';
+import { Check, Clock, Globe, ChefHat, Sparkles, ListChecks, ChevronDown, Plus, UtensilsCrossed } from 'lucide-react';
+import { Meal, MealType, Ingredient } from '@/types';
 import { useApp } from '@/context/AppContext';
-import { getServingsLabel } from '@/utils/portionScaling';
+import { getServingsLabel, scaleAmount } from '@/utils/portionScaling';
 import { MealNoteEditor } from './MealNoteEditor';
 import { PreparationChecklist } from './PreparationChecklist';
+import { IngredientEditor } from './IngredientEditor';
+import { ReplacementPrompt } from './ReplacementPrompt';
+import { categoryLabels } from '@/data/meals';
 
 interface MealCardProps {
   meal: Meal;
@@ -40,11 +43,30 @@ export function MealCard({ meal }: MealCardProps) {
     uncompleteDay,
     saveMealNote,
     getMealNote,
+    hideIngredient,
+    updateIngredientAmount,
+    updateIngredientName,
+    resetIngredientAmount,
+    resetIngredientName,
+    getIngredientCustomization,
+    addMealIngredient,
+    removeMealIngredient,
+    getMealIngredients,
+    showReplacementPrompt,
+    hideReplacementPrompt,
+    confirmReplacement,
   } = useApp();
 
   const isCompleted = progress.completedDays.includes(meal.day);
   const servings = progress.preferences.servings;
   const [isPreparationOpen, setIsPreparationOpen] = useState(false);
+  const [isIngredientsExpanded, setIsIngredientsExpanded] = useState(false);
+  const [isAddingIngredient, setIsAddingIngredient] = useState(false);
+  const [newIngredient, setNewIngredient] = useState({ name: '', amount: '', category: 'fresh' as Ingredient['category'] });
+  const [replacementPromptIngredient, setReplacementPromptIngredient] = useState<string | null>(null);
+
+  const mealType = meal.type as MealType;
+  const customIngredients = getMealIngredients(meal.id, mealType);
 
   const handleToggleComplete = () => {
     if (isCompleted) {
@@ -55,11 +77,75 @@ export function MealCard({ meal }: MealCardProps) {
   };
 
   const handleSaveNote = (note: string) => {
-    saveMealNote(meal.id, meal.type as MealType, note);
+    saveMealNote(meal.id, mealType, note);
   };
 
-  const currentNote = getMealNote(meal.id, meal.type as MealType);
+  const handleIngredientSave = (ingredientName: string, updates: { name?: string; amount?: string }) => {
+    if (updates.name) {
+      updateIngredientName(meal.id, mealType, ingredientName, updates.name);
+    }
+    if (updates.amount) {
+      updateIngredientAmount(meal.id, mealType, ingredientName, updates.amount);
+    }
+  };
+
+  const handleIngredientDelete = (ingredientName: string) => {
+    setReplacementPromptIngredient(ingredientName);
+    showReplacementPrompt(meal.id, mealType, ingredientName);
+  };
+
+  const handleIngredientReset = (ingredientName: string) => {
+    resetIngredientName(meal.id, mealType, ingredientName);
+    resetIngredientAmount(meal.id, mealType, ingredientName);
+  };
+
+  const handleConfirmReplacement = (replacementName: string) => {
+    if (replacementPromptIngredient) {
+      confirmReplacement(meal.id, mealType, replacementPromptIngredient, replacementName);
+      setReplacementPromptIngredient(null);
+    }
+  };
+
+  const handleDeleteWithoutReplacement = () => {
+    if (replacementPromptIngredient) {
+      hideIngredient(meal.id, mealType, replacementPromptIngredient);
+      hideReplacementPrompt(meal.id, mealType, replacementPromptIngredient);
+      setReplacementPromptIngredient(null);
+    }
+  };
+
+  const handleCancelReplacement = () => {
+    if (replacementPromptIngredient) {
+      hideReplacementPrompt(meal.id, mealType, replacementPromptIngredient);
+      setReplacementPromptIngredient(null);
+    }
+  };
+
+  const handleAddNewIngredient = () => {
+    if (newIngredient.name.trim()) {
+      addMealIngredient(meal.id, mealType, {
+        name: newIngredient.name.trim(),
+        amount: newIngredient.amount.trim() || '-',
+        category: newIngredient.category,
+      });
+      setNewIngredient({ name: '', amount: '', category: 'fresh' });
+      setIsAddingIngredient(false);
+    }
+  };
+
+  const handleRemoveCustomIngredient = (ingredientId: string) => {
+    removeMealIngredient(ingredientId);
+  };
+
+  // Filter visible ingredients
+  const visibleIngredients = meal.ingredients.filter((ing) => {
+    const customization = getIngredientCustomization(meal.id, mealType, ing.name);
+    return !customization?.isHidden;
+  });
+
+  const currentNote = getMealNote(meal.id, mealType);
   const hasPreparationSteps = meal.preparationSteps && meal.preparationSteps.length > 0;
+  const totalIngredients = visibleIngredients.length + customIngredients.length;
 
   return (
     <>
@@ -182,6 +268,158 @@ export function MealCard({ meal }: MealCardProps) {
           </section>
         )}
 
+        {/* Ingredients Section */}
+        <section className="relative z-10 border-t border-[var(--glass-border)]">
+          <motion.button
+            onClick={() => setIsIngredientsExpanded(!isIngredientsExpanded)}
+            className="flex w-full items-center justify-between px-5 py-4"
+            whileTap={{ scale: 0.99 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-teal)]/15">
+                <UtensilsCrossed size={18} className="text-[var(--system-teal)]" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-[var(--foreground)]">Zutaten</p>
+                <p className="text-sm text-[var(--foreground-secondary)]">
+                  {totalIngredients} Zutaten · bearbeiten
+                </p>
+              </div>
+            </div>
+            <motion.div
+              animate={{ rotate: isIngredientsExpanded ? 180 : 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            >
+              <ChevronDown size={20} className="text-[var(--gray-2)]" />
+            </motion.div>
+          </motion.button>
+
+          <AnimatePresence>
+            {isIngredientsExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="overflow-hidden"
+              >
+                <div className="px-5 pb-4">
+                  {/* Regular Ingredients */}
+                  <div className="space-y-1">
+                    {visibleIngredients.map((ingredient) => {
+                      const customization = getIngredientCustomization(meal.id, mealType, ingredient.name);
+                      const scaledAmount = scaleAmount(ingredient.amount, servings, ingredient.category);
+
+                      return (
+                        <IngredientEditor
+                          key={ingredient.name}
+                          ingredient={ingredient}
+                          mealId={meal.id}
+                          mealType={mealType}
+                          customization={customization}
+                          scaledAmount={scaledAmount}
+                          onSave={(updates) => handleIngredientSave(ingredient.name, updates)}
+                          onDelete={() => handleIngredientDelete(ingredient.name)}
+                          onReset={() => handleIngredientReset(ingredient.name)}
+                        />
+                      );
+                    })}
+
+                    {/* Custom Ingredients */}
+                    {customIngredients.map((customIng) => (
+                      <IngredientEditor
+                        key={customIng.id}
+                        ingredient={{
+                          name: customIng.name,
+                          amount: customIng.amount,
+                          category: customIng.category,
+                          forSideDish: customIng.forSideDish,
+                        }}
+                        mealId={meal.id}
+                        mealType={mealType}
+                        scaledAmount={customIng.amount}
+                        onSave={() => {}}
+                        onDelete={() => handleRemoveCustomIngredient(customIng.id)}
+                        isCustomIngredient
+                      />
+                    ))}
+                  </div>
+
+                  {/* Add New Ingredient */}
+                  <AnimatePresence mode="wait">
+                    {isAddingIngredient ? (
+                      <motion.div
+                        key="add-form"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mt-3 p-3 bg-[var(--fill-tertiary)] rounded-[12px]"
+                      >
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={newIngredient.name}
+                            onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
+                            placeholder="Zutat Name"
+                            autoFocus
+                            className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                          />
+                          <input
+                            type="text"
+                            value={newIngredient.amount}
+                            onChange={(e) => setNewIngredient({ ...newIngredient, amount: e.target.value })}
+                            placeholder="Menge (z.B. 200g)"
+                            className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                          />
+                          <select
+                            value={newIngredient.category}
+                            onChange={(e) => setNewIngredient({ ...newIngredient, category: e.target.value as Ingredient['category'] })}
+                            className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                          >
+                            {Object.entries(categoryLabels).map(([key, label]) => (
+                              <option key={key} value={key}>{label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <motion.button
+                            onClick={() => setIsAddingIngredient(false)}
+                            className="flex-1 py-2.5 rounded-[8px] bg-[var(--fill-secondary)] text-[var(--foreground-secondary)] font-medium text-sm"
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            Abbrechen
+                          </motion.button>
+                          <motion.button
+                            onClick={handleAddNewIngredient}
+                            disabled={!newIngredient.name.trim()}
+                            className="flex-1 py-2.5 rounded-[8px] bg-[var(--system-blue)] text-white font-medium text-sm disabled:opacity-50"
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            Hinzufügen
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.button
+                        key="add-button"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsAddingIngredient(true)}
+                        className="mt-3 flex w-full items-center justify-center gap-2 py-3 rounded-[12px] border border-dashed border-[var(--glass-border)] text-[14px] text-[var(--foreground-secondary)] hover:border-[var(--system-blue)] hover:text-[var(--system-blue)] transition-colors"
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Plus size={16} />
+                        Zutat hinzufügen
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+
         {/* Protein Options */}
         {meal.proteinOptions && meal.proteinOptions.length > 0 && (
           <section className="relative z-10 border-t border-[var(--glass-border)] px-5 py-4">
@@ -278,6 +516,20 @@ export function MealCard({ meal }: MealCardProps) {
           mealTitle={meal.title}
           steps={meal.preparationSteps || []}
           mealId={meal.id}
+        />
+      )}
+
+      {/* Replacement Prompt */}
+      {replacementPromptIngredient && (
+        <ReplacementPrompt
+          isOpen={!!replacementPromptIngredient}
+          ingredientName={replacementPromptIngredient}
+          mealId={meal.id}
+          mealType={mealType}
+          onConfirmReplacement={handleConfirmReplacement}
+          onDeleteWithoutReplacement={handleDeleteWithoutReplacement}
+          onCancel={handleCancelReplacement}
+          category={meal.ingredients.find((i) => i.name === replacementPromptIngredient)?.category}
         />
       )}
     </>

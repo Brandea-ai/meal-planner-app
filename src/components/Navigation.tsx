@@ -9,7 +9,7 @@ interface NavigationProps {
 }
 
 const tabs = [
-  { id: 'plan' as const, label: 'Plan', icon: Calendar },
+  { id: 'plan' as const, label: 'Mahlzeit', icon: Calendar },
   { id: 'shopping' as const, label: 'Einkauf', icon: ShoppingCart },
   { id: 'chat' as const, label: 'Chat', icon: MessageCircle },
   { id: 'statistics' as const, label: 'Statistik', icon: BarChart3 },

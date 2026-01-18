@@ -2,10 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus, Trash2, Search, X } from 'lucide-react';
+import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus, Trash2, Search, X, Pencil, Check, RefreshCw } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { unifiedShoppingList, categoryLabels } from '@/data/meals';
-import { LocalCustomShoppingItem } from '@/types';
+import { LocalCustomShoppingItem, ShoppingItem, Ingredient } from '@/types';
 import { scaleAmount, getServingsLabel } from '@/utils/portionScaling';
 import { CustomItemForm } from './CustomItemForm';
 
@@ -37,11 +37,19 @@ const listItemVariants = {
   exit: { opacity: 0, x: 10 },
 };
 
+interface EditingItem {
+  name: string;
+  newName: string;
+  newAmount: string;
+}
+
 export function ShoppingList() {
-  const { progress, toggleShoppingItem, addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem } = useApp();
+  const { progress, toggleShoppingItem, addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem, propagateIngredientChange, findMealsWithIngredient } = useApp();
   const [expandedCategories, setExpandedCategories] = useState<string[]>(categoryOrder);
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingItem, setEditingItem] = useState<EditingItem | null>(null);
+  const [showSyncConfirm, setShowSyncConfirm] = useState<{ item: ShoppingItem; affectedMeals: number } | null>(null);
 
   const servings = progress.preferences.servings;
   const customItems = progress.customShoppingItems || [];
@@ -119,6 +127,58 @@ export function ShoppingList() {
   const handleAddCustomItem = (item: { name: string; amount: string; category: LocalCustomShoppingItem['category']; mealType: 'breakfast' | 'dinner' | 'both' }) => {
     addCustomShoppingItem(item);
     setShowCustomForm(false);
+  };
+
+  const handleStartEdit = (item: ShoppingItem) => {
+    setEditingItem({
+      name: item.name,
+      newName: item.name,
+      newAmount: scaleAmount(item.amount, servings, item.category),
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingItem) return;
+
+    const originalItem = shoppingList.find((i) => i.name === editingItem.name);
+    if (!originalItem) return;
+
+    // Check if name changed and find affected meals
+    if (editingItem.newName !== editingItem.name) {
+      const affectedMeals = findMealsWithIngredient(editingItem.name);
+      if (affectedMeals.length > 0) {
+        setShowSyncConfirm({
+          item: originalItem,
+          affectedMeals: affectedMeals.length,
+        });
+        return;
+      }
+    }
+
+    setEditingItem(null);
+  };
+
+  const handleConfirmSync = () => {
+    if (!editingItem || !showSyncConfirm) return;
+
+    // Propagate the name change to all meals
+    propagateIngredientChange(
+      editingItem.name,
+      editingItem.newName,
+      showSyncConfirm.item.category as Ingredient['category']
+    );
+
+    setShowSyncConfirm(null);
+    setEditingItem(null);
+  };
+
+  const handleCancelSync = () => {
+    setShowSyncConfirm(null);
+    setEditingItem(null);
   };
 
   return (
@@ -229,7 +289,6 @@ export function ShoppingList() {
         )}
 
         {availableCategories.map((category) => {
-          const items = getCategoryItems(category);
           const customCategoryItems = getCategoryCustomItems(category);
           const { checked, total } = getCategoryProgress(category);
           const isExpanded = expandedCategories.includes(category);
@@ -296,6 +355,7 @@ export function ShoppingList() {
                         const renderItem = (item: typeof shoppingList[0], index: number) => {
                           const isChecked = progress.shoppingListChecked.includes(item.name);
                           const scaledAmount = scaleAmount(item.amount, servings, item.category);
+                          const isEditing = editingItem?.name === item.name;
 
                           return (
                             <motion.li
@@ -305,29 +365,88 @@ export function ShoppingList() {
                               animate="visible"
                               exit="exit"
                               transition={{ delay: index * 0.02 }}
+                              className="group"
                             >
-                              <label className="flex min-h-[48px] cursor-pointer items-center gap-3 px-5 py-2.5 transition-colors hover:bg-[var(--vibrancy-regular)]">
-                                <motion.div whileTap={{ scale: 0.9 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => toggleShoppingItem(item.name)}
-                                    className="flex-shrink-0"
-                                  />
-                                </motion.div>
-                                <span
-                                  className={`flex-1 text-[15px] transition-all ${
-                                    isChecked
-                                      ? 'text-[var(--foreground-tertiary)] line-through'
-                                      : 'text-[var(--foreground)]'
-                                  }`}
-                                >
-                                  {item.name}
-                                </span>
-                                <span className="text-sm text-[var(--foreground-tertiary)]">
-                                  {scaledAmount}
-                                </span>
-                              </label>
+                              <AnimatePresence mode="wait">
+                                {isEditing ? (
+                                  <motion.div
+                                    key="editing"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-[var(--fill-tertiary)]"
+                                  >
+                                    <div className="flex-1 space-y-2">
+                                      <input
+                                        type="text"
+                                        value={editingItem.newName}
+                                        onChange={(e) => setEditingItem({ ...editingItem, newName: e.target.value })}
+                                        className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                                        autoFocus
+                                      />
+                                      <input
+                                        type="text"
+                                        value={editingItem.newAmount}
+                                        onChange={(e) => setEditingItem({ ...editingItem, newAmount: e.target.value })}
+                                        className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                                      />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                      <motion.button
+                                        onClick={handleSaveEdit}
+                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--system-green)] text-white"
+                                        whileTap={{ scale: 0.9 }}
+                                      >
+                                        <Check size={16} />
+                                      </motion.button>
+                                      <motion.button
+                                        onClick={handleCancelEdit}
+                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--fill-secondary)] text-[var(--foreground-secondary)]"
+                                        whileTap={{ scale: 0.9 }}
+                                      >
+                                        <X size={16} />
+                                      </motion.button>
+                                    </div>
+                                  </motion.div>
+                                ) : (
+                                  <motion.div
+                                    key="display"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="flex min-h-[48px] items-center gap-3 px-5 py-2.5 transition-colors hover:bg-[var(--vibrancy-regular)]"
+                                  >
+                                    <motion.div whileTap={{ scale: 0.9 }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={() => toggleShoppingItem(item.name)}
+                                        className="flex-shrink-0 cursor-pointer"
+                                      />
+                                    </motion.div>
+                                    <span
+                                      className={`flex-1 text-[15px] transition-all ${
+                                        isChecked
+                                          ? 'text-[var(--foreground-tertiary)] line-through'
+                                          : 'text-[var(--foreground)]'
+                                      }`}
+                                    >
+                                      {item.name}
+                                    </span>
+                                    <span className="text-sm text-[var(--foreground-tertiary)]">
+                                      {scaledAmount}
+                                    </span>
+                                    <motion.button
+                                      onClick={() => handleStartEdit(item)}
+                                      className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--foreground-secondary)] hover:bg-[var(--fill-secondary)] opacity-0 group-hover:opacity-100 transition-opacity"
+                                      whileTap={{ scale: 0.9 }}
+                                      aria-label={`${item.name} bearbeiten`}
+                                    >
+                                      <Pencil size={14} />
+                                    </motion.button>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </motion.li>
                           );
                         };
@@ -431,6 +550,65 @@ export function ShoppingList() {
             onSubmit={handleAddCustomItem}
             onClose={() => setShowCustomForm(false)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Sync Confirmation Modal */}
+      <AnimatePresence>
+        {showSyncConfirm && editingItem && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCancelSync}
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="fixed left-4 right-4 bottom-8 z-50 mx-auto max-w-md glass-card overflow-hidden"
+            >
+              <div className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--system-blue)]/15">
+                    <RefreshCw size={24} className="text-[var(--system-blue)]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[var(--foreground)]">Änderung synchronisieren?</h3>
+                    <p className="text-sm text-[var(--foreground-secondary)]">
+                      {showSyncConfirm.affectedMeals} Mahlzeit{showSyncConfirm.affectedMeals !== 1 ? 'en' : ''} betroffen
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-4 p-3 bg-[var(--fill-tertiary)] rounded-[12px]">
+                  <p className="text-sm text-[var(--foreground-secondary)]">
+                    &quot;{editingItem.name}&quot; wird in allen betroffenen Mahlzeiten zu &quot;{editingItem.newName}&quot; geändert.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={handleCancelSync}
+                    className="flex-1 py-3.5 rounded-[12px] bg-[var(--fill-tertiary)] text-[var(--foreground-secondary)] font-semibold"
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Abbrechen
+                  </motion.button>
+                  <motion.button
+                    onClick={handleConfirmSync}
+                    className="flex-1 py-3.5 rounded-[12px] bg-[var(--system-blue)] text-white font-semibold"
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Synchronisieren
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </motion.section>

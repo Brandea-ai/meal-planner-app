@@ -39,6 +39,37 @@ export interface IngredientCustomization {
   customAmount?: string; // User-modified amount
   customName?: string; // User-modified ingredient name
   isHidden: boolean; // User removed this ingredient
+  replacedWith?: string; // If replaced (e.g., Rind → Hähnchen)
+  showReplacePrompt?: boolean; // Trigger for replacement dialog
+}
+
+// Tracking system for bidirectional sync
+export interface IngredientLink {
+  ingredientName: string;
+  originalName: string; // Original name from meals.ts
+  linkedMealIds: number[]; // Which meals use this ingredient
+  mealType: MealType;
+}
+
+// Pending changes for sync propagation
+export interface PendingIngredientChange {
+  originalName: string;
+  newName?: string;
+  newAmount?: string;
+  affectedMeals: { mealId: number; mealType: MealType }[];
+  action: 'rename' | 'delete' | 'modify_amount';
+  timestamp: string;
+}
+
+// User-added ingredient to a meal
+export interface CustomMealIngredient {
+  id: string;
+  mealId: number;
+  mealType: MealType;
+  name: string;
+  amount: string;
+  category: Ingredient['category'];
+  forSideDish?: boolean;
 }
 
 // Meal note stored locally
@@ -65,12 +96,16 @@ export interface UserProgress {
   startDate: string | null;
   preferences: UserPreferences;
   shoppingListChecked: string[];
-  // New: ingredient customizations
+  // Ingredient customizations (edit, hide, rename)
   ingredientCustomizations: IngredientCustomization[];
-  // New: meal notes
+  // Meal notes
   mealNotes: StoredMealNote[];
-  // New: custom shopping items
+  // Custom shopping items
   customShoppingItems: LocalCustomShoppingItem[];
+  // Custom ingredients added to meals
+  customMealIngredients: CustomMealIngredient[];
+  // Pending sync changes for bidirectional updates
+  pendingChanges: PendingIngredientChange[];
 }
 
 export interface UserPreferences {

@@ -23,6 +23,8 @@ const defaultProgress: UserProgress = {
   ingredientCustomizations: [],
   mealNotes: [],
   customShoppingItems: [],
+  customMealIngredients: [],
+  pendingChanges: [],
 };
 
 interface CloudSyncReturn {
@@ -76,6 +78,8 @@ export function useCloudSync(): CloudSyncReturn {
           ingredientCustomizations: data.ingredient_customizations || [],
           mealNotes: data.meal_notes || [],
           customShoppingItems: data.custom_shopping_items || [],
+          customMealIngredients: data.custom_meal_ingredients || [],
+          pendingChanges: data.pending_changes || [],
         };
         setProgressState(cloudProgress);
         localStorage.setItem('meal-planner-progress', JSON.stringify(cloudProgress));
@@ -122,6 +126,8 @@ export function useCloudSync(): CloudSyncReturn {
       ingredientCustomizations: (data.ingredient_customizations as UserProgress['ingredientCustomizations']) || [],
       mealNotes: (data.meal_notes as UserProgress['mealNotes']) || [],
       customShoppingItems: (data.custom_shopping_items as UserProgress['customShoppingItems']) || [],
+      customMealIngredients: (data.custom_meal_ingredients as UserProgress['customMealIngredients']) || [],
+      pendingChanges: (data.pending_changes as UserProgress['pendingChanges']) || [],
     };
   }, []);
 
