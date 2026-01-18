@@ -1,10 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  QrCode,
-  Cloud,
   ChevronRight,
   RotateCcw,
   Users,
@@ -17,14 +14,12 @@ import {
   Fish,
   Beef,
   Scale,
-  CheckCircle2,
   Download,
   MessageCircle,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useChat } from '@/hooks/useChat';
 import { ProgressRing } from './ProgressRing';
-import { DeviceSync } from './DeviceSync';
 import { InfoPopup } from './InfoPopup';
 
 const principles = [
@@ -54,10 +49,8 @@ const itemVariants = {
 };
 
 export function Settings() {
-  const { progress, syncStatus, deviceId, updatePreferences, resetProgress, switchDevice } = useApp();
+  const { progress, updatePreferences, resetProgress } = useApp();
   const { messages, exportChat } = useChat();
-  const [showDeviceSync, setShowDeviceSync] = useState(false);
-  const [syncSuccess, setSyncSuccess] = useState(false);
 
   const handleServingsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     updatePreferences({ servings: parseInt(e.target.value, 10) });
@@ -71,13 +64,6 @@ export function Settings() {
     if (window.confirm('Möchtest du deinen gesamten Fortschritt wirklich zurücksetzen?')) {
       resetProgress();
     }
-  };
-
-  const handleDeviceSync = async (newDeviceId: string) => {
-    await switchDevice(newDeviceId);
-    setShowDeviceSync(false);
-    setSyncSuccess(true);
-    setTimeout(() => setSyncSuccess(false), 3000);
   };
 
   const handleExportChat = () => {
@@ -101,26 +87,6 @@ export function Settings() {
       initial="hidden"
       animate="visible"
     >
-      {/* Success Message */}
-      <AnimatePresence>
-        {syncSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="flex items-center gap-3 glass-card p-4 ring-2 ring-[var(--system-green)]/30"
-          >
-            <CheckCircle2 size={24} className="flex-shrink-0 text-[var(--system-green)]" />
-            <div>
-              <p className="font-semibold text-[var(--system-green)]">Geräte erfolgreich verbunden!</p>
-              <p className="mt-0.5 text-sm text-[var(--system-green)]/80">
-                Deine Daten werden jetzt synchronisiert.
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Progress Section */}
       <motion.section variants={itemVariants} className="glass-card overflow-hidden">
         <div className="p-6">
@@ -138,76 +104,6 @@ export function Settings() {
               })}
             </p>
           )}
-        </div>
-      </motion.section>
-
-      {/* Device Sync Section */}
-      <motion.section
-        variants={itemVariants}
-        className="glass-card overflow-hidden ring-1 ring-[var(--system-blue)]/20"
-      >
-        <motion.button
-          onClick={() => setShowDeviceSync(true)}
-          className="flex min-h-[56px] w-full items-center justify-between p-4"
-          whileTap={{ scale: 0.99 }}
-        >
-          <div className="flex items-center gap-3">
-            <motion.div
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--system-blue)]"
-              whileHover={{ scale: 1.05 }}
-            >
-              <QrCode size={22} className="text-white" />
-            </motion.div>
-            <div className="text-left">
-              <span className="block font-semibold text-[var(--foreground)]">
-                Geräte verbinden
-              </span>
-              <span className="text-sm text-[var(--foreground-secondary)]">
-                QR-Code Sync
-              </span>
-            </div>
-          </div>
-          <ChevronRight size={20} className="text-[var(--gray-2)]" />
-        </motion.button>
-      </motion.section>
-
-      {/* Cloud Sync Status */}
-      <motion.section variants={itemVariants} className="glass-card overflow-hidden">
-        <div className="flex min-h-[56px] items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full glass-inner">
-              <Cloud size={22} className="text-[var(--foreground-secondary)]" />
-            </div>
-            <div>
-              <span className="block font-semibold text-[var(--foreground)]">
-                Cloud-Sync
-              </span>
-              {deviceId && (
-                <span className="font-mono text-xs text-[var(--foreground-tertiary)]">
-                  ID: {deviceId.slice(0, 8)}...
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 glass-inner px-3 py-1.5 rounded-full">
-            <motion.div
-              className={`h-2.5 w-2.5 rounded-full ${
-                syncStatus === 'synced' ? 'bg-[var(--system-green)]' :
-                syncStatus === 'syncing' ? 'bg-[var(--system-yellow)]' :
-                syncStatus === 'error' ? 'bg-[var(--system-red)]' :
-                'bg-[var(--gray-2)]'
-              }`}
-              animate={syncStatus === 'syncing' ? { scale: [1, 1.2, 1] } : {}}
-              transition={{ duration: 0.8, repeat: Infinity }}
-            />
-            <span className="text-sm text-[var(--foreground-secondary)]">
-              {syncStatus === 'synced' && 'Synchronisiert'}
-              {syncStatus === 'syncing' && 'Synchronisiere...'}
-              {syncStatus === 'error' && 'Sync-Fehler'}
-              {syncStatus === 'offline' && 'Offline'}
-              {!syncStatus && 'Verbinde...'}
-            </span>
-          </div>
         </div>
       </motion.section>
 
@@ -390,16 +286,6 @@ export function Settings() {
           <ChevronRight size={20} className="text-[var(--gray-2)]" />
         </motion.button>
       </motion.section>
-
-      {/* Device Sync Modal */}
-      <AnimatePresence>
-        {showDeviceSync && (
-          <DeviceSync
-            onSync={handleDeviceSync}
-            onClose={() => setShowDeviceSync(false)}
-          />
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
