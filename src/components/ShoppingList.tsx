@@ -44,12 +44,15 @@ interface EditingItem {
 }
 
 export function ShoppingList() {
-  const { progress, toggleShoppingItem, addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem, propagateIngredientChange, findMealsWithIngredient } = useApp();
+  const { progress, toggleShoppingItem, addCustomShoppingItem, removeCustomShoppingItem, toggleCustomShoppingItem, propagateIngredientChange, findMealsWithIngredient, hideIngredient } = useApp();
   const [expandedCategories, setExpandedCategories] = useState<string[]>(categoryOrder);
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingItem, setEditingItem] = useState<EditingItem | null>(null);
   const [showSyncConfirm, setShowSyncConfirm] = useState<{ item: ShoppingItem; affectedMeals: number } | null>(null);
+  const [addingToCategory, setAddingToCategory] = useState<string | null>(null);
+  const [newCategoryItem, setNewCategoryItem] = useState({ name: '', amount: '' });
+  const [deletingItem, setDeletingItem] = useState<{ name: string; affectedMeals: number } | null>(null);
 
   const servings = progress.preferences.servings;
   const customItems = progress.customShoppingItems || [];
@@ -179,6 +182,61 @@ export function ShoppingList() {
   const handleCancelSync = () => {
     setShowSyncConfirm(null);
     setEditingItem(null);
+  };
+
+  // Category-specific add
+  const handleStartAddToCategory = (category: string) => {
+    setAddingToCategory(category);
+    setNewCategoryItem({ name: '', amount: '' });
+  };
+
+  const handleCancelAddToCategory = () => {
+    setAddingToCategory(null);
+    setNewCategoryItem({ name: '', amount: '' });
+  };
+
+  const handleAddToCategory = () => {
+    if (!addingToCategory || !newCategoryItem.name.trim()) return;
+
+    addCustomShoppingItem({
+      name: newCategoryItem.name.trim(),
+      amount: newCategoryItem.amount.trim() || '-',
+      category: addingToCategory as LocalCustomShoppingItem['category'],
+      mealType: 'both',
+    });
+
+    setAddingToCategory(null);
+    setNewCategoryItem({ name: '', amount: '' });
+  };
+
+  // Delete with confirmation
+  const handleDeleteItem = (itemName: string) => {
+    const affectedMeals = findMealsWithIngredient(itemName);
+    if (affectedMeals.length > 0) {
+      setDeletingItem({ name: itemName, affectedMeals: affectedMeals.length });
+    } else {
+      // No meals affected, just hide it
+      // For standard items, we need to hide them in all meals
+      affectedMeals.forEach(({ mealId, mealType }) => {
+        hideIngredient(mealId, mealType, itemName);
+      });
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingItem) return;
+
+    // Hide from all affected meals
+    const affectedMeals = findMealsWithIngredient(deletingItem.name);
+    affectedMeals.forEach(({ mealId, mealType }) => {
+      hideIngredient(mealId, mealType, deletingItem.name);
+    });
+
+    setDeletingItem(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeletingItem(null);
   };
 
   return (
@@ -436,14 +494,24 @@ export function ShoppingList() {
                                     <span className="text-sm text-[var(--foreground-tertiary)]">
                                       {scaledAmount}
                                     </span>
-                                    <motion.button
-                                      onClick={() => handleStartEdit(item)}
-                                      className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--foreground-secondary)] hover:bg-[var(--fill-secondary)] opacity-0 group-hover:opacity-100 transition-opacity"
-                                      whileTap={{ scale: 0.9 }}
-                                      aria-label={`${item.name} bearbeiten`}
-                                    >
-                                      <Pencil size={14} />
-                                    </motion.button>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <motion.button
+                                        onClick={() => handleStartEdit(item)}
+                                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--foreground-secondary)] hover:bg-[var(--fill-secondary)]"
+                                        whileTap={{ scale: 0.9 }}
+                                        aria-label={`${item.name} bearbeiten`}
+                                      >
+                                        <Pencil size={14} />
+                                      </motion.button>
+                                      <motion.button
+                                        onClick={() => handleDeleteItem(item.name)}
+                                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--system-red)] hover:bg-[var(--system-red)]/10"
+                                        whileTap={{ scale: 0.9 }}
+                                        aria-label={`${item.name} löschen`}
+                                      >
+                                        <Trash2 size={14} />
+                                      </motion.button>
+                                    </div>
                                   </motion.div>
                                 )}
                               </AnimatePresence>
@@ -534,6 +602,72 @@ export function ShoppingList() {
                           </ul>
                         </>
                       )}
+
+                      {/* Add to this category */}
+                      <div className="px-5 pt-3 pb-2">
+                        <AnimatePresence mode="wait">
+                          {addingToCategory === category ? (
+                            <motion.div
+                              key="add-form"
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="p-3 bg-[var(--fill-secondary)] rounded-[12px]"
+                            >
+                              <div className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={newCategoryItem.name}
+                                  onChange={(e) => setNewCategoryItem({ ...newCategoryItem, name: e.target.value })}
+                                  placeholder="Zutat Name"
+                                  autoFocus
+                                  onKeyDown={(e) => e.key === 'Enter' && handleAddToCategory()}
+                                  className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                                />
+                                <input
+                                  type="text"
+                                  value={newCategoryItem.amount}
+                                  onChange={(e) => setNewCategoryItem({ ...newCategoryItem, amount: e.target.value })}
+                                  placeholder="Menge (z.B. 200g)"
+                                  onKeyDown={(e) => e.key === 'Enter' && handleAddToCategory()}
+                                  className="w-full bg-[var(--background)] rounded-[8px] px-3 py-2 text-[14px] text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] border border-[var(--glass-border)] focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)]/30"
+                                />
+                              </div>
+                              <div className="flex gap-2 mt-3">
+                                <motion.button
+                                  onClick={handleCancelAddToCategory}
+                                  className="flex-1 py-2.5 rounded-[8px] bg-[var(--fill-tertiary)] text-[var(--foreground-secondary)] font-medium text-sm"
+                                  whileTap={{ scale: 0.98 }}
+                                >
+                                  Abbrechen
+                                </motion.button>
+                                <motion.button
+                                  onClick={handleAddToCategory}
+                                  disabled={!newCategoryItem.name.trim()}
+                                  className="flex-1 py-2.5 rounded-[8px] bg-[var(--system-blue)] text-white font-medium text-sm disabled:opacity-50"
+                                  whileTap={{ scale: 0.98 }}
+                                >
+                                  Hinzufügen
+                                </motion.button>
+                              </div>
+                            </motion.div>
+                          ) : (
+                            <motion.button
+                              key="add-button"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              onClick={() => handleStartAddToCategory(category)}
+                              className="flex w-full items-center justify-center gap-2 py-2.5 rounded-[10px] border border-dashed border-[var(--glass-border)] text-[13px] text-[var(--foreground-tertiary)] hover:border-[var(--system-blue)] hover:text-[var(--system-blue)] transition-colors"
+                              whileTap={{ scale: 0.98 }}
+                              style={{ borderColor: `color-mix(in srgb, ${categoryColor} 30%, transparent)` }}
+                            >
+                              <Plus size={14} />
+                              Hinzufügen
+                            </motion.button>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -604,6 +738,65 @@ export function ShoppingList() {
                     whileTap={{ scale: 0.98 }}
                   >
                     Synchronisieren
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deletingItem && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCancelDelete}
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="fixed left-4 right-4 bottom-8 z-50 mx-auto max-w-md glass-card overflow-hidden"
+            >
+              <div className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--system-red)]/15">
+                    <Trash2 size={24} className="text-[var(--system-red)]" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[var(--foreground)]">Zutat löschen?</h3>
+                    <p className="text-sm text-[var(--foreground-secondary)]">
+                      {deletingItem.affectedMeals} Mahlzeit{deletingItem.affectedMeals !== 1 ? 'en' : ''} betroffen
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-4 p-3 bg-[var(--fill-tertiary)] rounded-[12px]">
+                  <p className="text-sm text-[var(--foreground-secondary)]">
+                    &quot;{deletingItem.name}&quot; wird aus allen betroffenen Mahlzeiten entfernt.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={handleCancelDelete}
+                    className="flex-1 py-3.5 rounded-[12px] bg-[var(--fill-tertiary)] text-[var(--foreground-secondary)] font-semibold"
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Abbrechen
+                  </motion.button>
+                  <motion.button
+                    onClick={handleConfirmDelete}
+                    className="flex-1 py-3.5 rounded-[12px] bg-[var(--system-red)] text-white font-semibold"
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Löschen
                   </motion.button>
                 </div>
               </div>
