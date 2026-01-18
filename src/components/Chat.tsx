@@ -53,6 +53,7 @@ export function Chat({ onBack }: ChatProps) {
     setPassword,
     verifyPassword,
     logout,
+    remainingTime,
   } = useChat();
 
   const {
@@ -286,6 +287,11 @@ export function Chat({ onBack }: ChatProps) {
               </div>
               <p className="text-xs text-[var(--foreground-tertiary)]">
                 {isEncrypted ? 'Verschlüsselt' : ''} {messages.length} Nachrichten
+                {remainingTime !== null && remainingTime <= 60 && (
+                  <span className="ml-1 text-[var(--system-orange)]">
+                    · {Math.floor(remainingTime / 60)}:{(remainingTime % 60).toString().padStart(2, '0')}
+                  </span>
+                )}
               </p>
             </div>
           </div>

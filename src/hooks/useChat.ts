@@ -14,6 +14,9 @@ import {
   resetEncryption,
 } from '@/lib/crypto';
 
+// Auto-logout after 5 minutes of inactivity
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes in ms
+
 interface UseChatReturn {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -31,6 +34,8 @@ interface UseChatReturn {
   setPassword: (password: string) => Promise<void>;
   verifyPassword: (password: string) => Promise<boolean>;
   logout: () => void;
+  // Auto-logout
+  remainingTime: number | null; // seconds until auto-logout, null if not logged in
 }
 
 export function useChat(): UseChatReturn {
@@ -48,6 +53,12 @@ export function useChat(): UseChatReturn {
   const deviceIdRef = useRef<string>('');
   const passwordRef = useRef<string | null>(null);
   const firstMessageRef = useRef<string | null>(null);
+
+  // Auto-logout state
+  const [remainingTime, setRemainingTime] = useState<number | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+  const logoutTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check if there are existing encrypted messages in the database
   const checkForEncryptedMessages = useCallback(async (deviceId: string): Promise<boolean> => {
@@ -505,8 +516,23 @@ export function useChat(): UseChatReturn {
     };
   }, [messages]);
 
+  // Clear auto-logout timers
+  const clearAutoLogoutTimers = useCallback(() => {
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    setRemainingTime(null);
+  }, []);
+
   // Logout - completely reset encryption and show password screen again
   const logout = useCallback(() => {
+    // Clear auto-logout timers
+    clearAutoLogoutTimers();
     // Clear all stored passwords (both session and local storage)
     resetEncryption();
     // Reset all state
@@ -520,7 +546,58 @@ export function useChat(): UseChatReturn {
     if (typeof window !== 'undefined') {
       window.location.reload();
     }
+  }, [clearAutoLogoutTimers]);
+
+  // Reset activity timer (called on user interaction)
+  const resetActivityTimer = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    setRemainingTime(Math.floor(INACTIVITY_TIMEOUT / 1000));
   }, []);
+
+  // Start auto-logout timer when logged in
+  useEffect(() => {
+    // Only run if logged in (has password)
+    if (!password || needsPassword) {
+      clearAutoLogoutTimers();
+      return;
+    }
+
+    // Set initial remaining time
+    setRemainingTime(Math.floor(INACTIVITY_TIMEOUT / 1000));
+    lastActivityRef.current = Date.now();
+
+    // Activity event handler
+    const handleActivity = () => {
+      resetActivityTimer();
+    };
+
+    // Listen for user activity
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Countdown interval - update remaining time every second
+    countdownIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - lastActivityRef.current;
+      const remaining = Math.max(0, Math.floor((INACTIVITY_TIMEOUT - elapsed) / 1000));
+      setRemainingTime(remaining);
+
+      // Auto-logout when time is up
+      if (remaining <= 0) {
+        console.log('Auto-logout due to inactivity');
+        logout();
+      }
+    }, 1000);
+
+    // Cleanup
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      clearAutoLogoutTimers();
+    };
+  }, [password, needsPassword, logout, resetActivityTimer, clearAutoLogoutTimers]);
 
   return {
     messages,
@@ -539,5 +616,7 @@ export function useChat(): UseChatReturn {
     setPassword,
     verifyPassword: verifyPasswordFn,
     logout,
+    // Auto-logout
+    remainingTime,
   };
 }
