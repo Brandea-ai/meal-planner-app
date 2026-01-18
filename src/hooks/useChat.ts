@@ -112,13 +112,17 @@ export function useChat(): UseChatReturn {
         setNeedsPassword(false);
         setIsPasswordSetup(true);
         setShouldLoadMessages(true); // Signal to load messages
-      } else if (hasLocalSetup || hasExistingEncrypted) {
-        // Password required - either local hash exists OR encrypted messages in DB
+      } else if (hasLocalSetup) {
+        // Local password hash exists - user set up encryption on THIS device
+        // They need to enter their password
         setNeedsPassword(true);
-        setIsPasswordSetup(true); // Always true if encryption exists anywhere
+        setIsPasswordSetup(true);
         setIsLoading(false); // Not loading yet, waiting for password
       } else {
-        // No encryption setup at all - new chat, allow direct access
+        // No local password setup - allow direct access
+        // Even if there are encrypted messages from another device,
+        // this device hasn't set up encryption yet
+        // User can set up encryption from chat settings
         setNeedsPassword(false);
         setIsPasswordSetup(false);
         setShouldLoadMessages(true); // Can load messages without password
