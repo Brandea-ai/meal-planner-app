@@ -24,12 +24,14 @@ import {
 } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { useCall } from '@/hooks/useCall';
+import { useNotification } from '@/hooks/useNotification';
 import { breakfastMeals, dinnerMeals } from '@/data/meals';
 import { MealType, ChatMessage } from '@/types';
 import { IncomingCall } from './IncomingCall';
 import { ActiveCall } from './ActiveCall';
 import { PasswordSetup } from './PasswordSetup';
 import { DeviceSync } from './DeviceSync';
+import { InAppNotification } from './InAppNotification';
 import { getDeviceId } from '@/lib/supabase';
 import { resetEncryption } from '@/lib/crypto';
 
@@ -91,6 +93,13 @@ export function Chat({ onBack }: ChatProps) {
     toggleVideo,
   } = useCall(senderName);
 
+  const {
+    notifications,
+    showNotification,
+    dismissNotification,
+    stopCallSound,
+  } = useNotification();
+
   const [inputMessage, setInputMessage] = useState('');
   const [showNameInput, setShowNameInput] = useState(!senderName);
   const [tempName, setTempName] = useState('');
@@ -106,6 +115,8 @@ export function Chat({ onBack }: ChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const prevMessagesLengthRef = useRef<number>(0);
+  const hasInitializedRef = useRef<boolean>(false);
 
   // Swipe to go back - MUST be defined before any conditional returns
   const handleTouchStartSwipe = useCallback((e: React.TouchEvent) => {
@@ -134,6 +145,49 @@ export function Chat({ onBack }: ChatProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Detect new messages and show notifications
+  useEffect(() => {
+    // Skip on initial load
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      prevMessagesLengthRef.current = messages.length;
+      return;
+    }
+
+    // Check if there are new messages
+    if (messages.length > prevMessagesLengthRef.current) {
+      // Get the new messages
+      const newMessages = messages.slice(prevMessagesLengthRef.current);
+
+      // Show notifications for messages from others
+      newMessages.forEach((msg) => {
+        if (msg.senderName !== senderName) {
+          showNotification(
+            'message',
+            msg.senderName,
+            msg.message.length > 50 ? msg.message.substring(0, 50) + '...' : msg.message
+          );
+        }
+      });
+    }
+
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages, senderName, showNotification]);
+
+  // Show notification and play sound for incoming calls
+  useEffect(() => {
+    if (incomingCall && callState === 'incoming') {
+      showNotification(
+        incomingCall.callType === 'video' ? 'call-video' : 'call-audio',
+        `${incomingCall.callerName} ruft an`,
+        incomingCall.callType === 'video' ? 'Videoanruf' : 'Sprachanruf'
+      );
+    } else {
+      // Stop call sound when call ends or is answered
+      stopCallSound();
+    }
+  }, [incomingCall, callState, showNotification, stopCallSound]);
 
   useEffect(() => {
     if (replyingTo || editingMessage) {
@@ -341,6 +395,19 @@ export function Chat({ onBack }: ChatProps) {
       onTouchMove={handleTouchMoveSwipe}
       onTouchEnd={handleTouchEndSwipe}
     >
+      {/* In-App Notifications */}
+      <InAppNotification
+        notifications={notifications}
+        onDismiss={dismissNotification}
+        onTap={(notification) => {
+          // Scroll to bottom on message tap
+          if (notification.type === 'message') {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }
+          dismissNotification(notification.id);
+        }}
+      />
+
       {/* Header - Responsive */}
       <header className="sticky top-0 z-40 glass-header safe-area-top">
         <div className="flex items-center justify-between px-3 py-2 gap-2">

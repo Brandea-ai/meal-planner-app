@@ -13,6 +13,7 @@ import { Settings } from './Settings';
 import { Navigation } from './Navigation';
 import { Statistics } from './statistics/Statistics';
 import { Chat } from './Chat';
+import { PermissionSetup } from './PermissionSetup';
 
 /**
  * Prep Time Thresholds (evidenzbasiert)
@@ -75,8 +76,19 @@ export function MealPlanApp() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [mealType, setMealType] = useState<MealType>('breakfast');
   const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [showPermissionSetup, setShowPermissionSetup] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const hasStarted = useRef(false);
+
+  // Check if permissions setup is needed
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const alreadySetup = localStorage.getItem('meal-planner-permissions-setup');
+      if (alreadySetup !== 'true') {
+        setShowPermissionSetup(true);
+      }
+    }
+  }, []);
 
   // Minimum swipe distance
   const minSwipeDistance = 50;
@@ -169,6 +181,17 @@ export function MealPlanApp() {
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         />
       </div>
+    );
+  }
+
+  // Show permission setup on first launch
+  if (showPermissionSetup) {
+    return (
+      <PermissionSetup
+        onComplete={() => {
+          setShowPermissionSetup(false);
+        }}
+      />
     );
   }
 
