@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Leaf, Drumstick, Milk, Bean, Wheat, Droplets, Sparkles, Plus, Trash2, Search, X, Pencil, Check, RefreshCw } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
@@ -8,6 +8,7 @@ import { unifiedShoppingList, categoryLabels } from '@/data/meals';
 import { LocalCustomShoppingItem, ShoppingItem, Ingredient } from '@/types';
 import { scaleAmount, getServingsLabel } from '@/utils/portionScaling';
 import { CustomItemForm } from './CustomItemForm';
+import confetti from 'canvas-confetti';
 
 const categoryIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   fresh: Leaf,
@@ -53,6 +54,41 @@ export function ShoppingList() {
   const [addingToCategory, setAddingToCategory] = useState<string | null>(null);
   const [newCategoryItem, setNewCategoryItem] = useState({ name: '', amount: '' });
   const [deletingItem, setDeletingItem] = useState<{ name: string; affectedMeals: number } | null>(null);
+
+  // Confetti animation for checking off items
+  const triggerConfetti = useCallback((e: React.MouseEvent) => {
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const x = (rect.left + rect.width / 2) / window.innerWidth;
+    const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { x, y },
+      colors: ['#34C759', '#30D158', '#32D74B', '#FFD60A', '#FF9F0A'],
+      ticks: 100,
+      gravity: 1.2,
+      scalar: 0.8,
+      shapes: ['circle', 'square'],
+      disableForReducedMotion: true,
+    });
+  }, []);
+
+  // Toggle with confetti for standard items
+  const handleToggleWithConfetti = useCallback((itemName: string, isCurrentlyChecked: boolean, e: React.MouseEvent) => {
+    if (!isCurrentlyChecked) {
+      triggerConfetti(e);
+    }
+    toggleShoppingItem(itemName);
+  }, [toggleShoppingItem, triggerConfetti]);
+
+  // Toggle with confetti for custom items
+  const handleToggleCustomWithConfetti = useCallback((itemId: string, isCurrentlyChecked: boolean, e: React.MouseEvent) => {
+    if (!isCurrentlyChecked) {
+      triggerConfetti(e);
+    }
+    toggleCustomShoppingItem(itemId);
+  }, [toggleCustomShoppingItem, triggerConfetti]);
 
   const servings = progress.preferences.servings;
   const customItems = progress.customShoppingItems || [];
@@ -553,15 +589,35 @@ export function ShoppingList() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="flex min-h-[48px] items-center gap-3 px-5 py-2.5 transition-colors hover:bg-[var(--vibrancy-regular)]"
+                                    onClick={(e) => handleToggleWithConfetti(item.name, isChecked, e)}
+                                    className="flex min-h-[48px] items-center gap-3 px-5 py-2.5 transition-colors hover:bg-[var(--vibrancy-regular)] cursor-pointer active:scale-[0.99]"
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => e.key === 'Enter' && toggleShoppingItem(item.name)}
                                   >
-                                    <motion.div whileTap={{ scale: 0.9 }}>
-                                      <input
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={() => toggleShoppingItem(item.name)}
-                                        className="flex-shrink-0 cursor-pointer"
-                                      />
+                                    <motion.div
+                                      whileTap={{ scale: 0.85 }}
+                                      className="relative"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <div
+                                        onClick={(e) => handleToggleWithConfetti(item.name, isChecked, e)}
+                                        className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all cursor-pointer ${
+                                          isChecked
+                                            ? 'border-[var(--system-green)] bg-[var(--system-green)]'
+                                            : 'border-[var(--gray-2)] bg-transparent hover:border-[var(--gray-1)]'
+                                        }`}
+                                      >
+                                        {isChecked && (
+                                          <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                          >
+                                            <Check size={14} className="text-white" strokeWidth={3} />
+                                          </motion.div>
+                                        )}
+                                      </div>
                                     </motion.div>
                                     <span
                                       className={`flex-1 text-[15px] transition-all ${
@@ -575,7 +631,10 @@ export function ShoppingList() {
                                     <span className="text-sm text-[var(--foreground-tertiary)]">
                                       {scaledAmount}
                                     </span>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div
+                                      className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                       <motion.button
                                         onClick={() => handleStartEdit(item)}
                                         className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--foreground-secondary)] hover:bg-[var(--fill-secondary)]"
@@ -646,15 +705,38 @@ export function ShoppingList() {
                                 animate="visible"
                                 exit="exit"
                                 transition={{ delay: index * 0.02 }}
+                                className="group"
                               >
-                                <div className="flex min-h-[48px] items-center gap-3 px-5 py-2.5">
-                                  <motion.div whileTap={{ scale: 0.9 }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={item.isChecked}
-                                      onChange={() => toggleCustomShoppingItem(item.id)}
-                                      className="flex-shrink-0"
-                                    />
+                                <div
+                                  onClick={(e) => handleToggleCustomWithConfetti(item.id, item.isChecked, e)}
+                                  className="flex min-h-[48px] items-center gap-3 px-5 py-2.5 cursor-pointer hover:bg-[var(--vibrancy-regular)] transition-colors active:scale-[0.99]"
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => e.key === 'Enter' && toggleCustomShoppingItem(item.id)}
+                                >
+                                  <motion.div
+                                    whileTap={{ scale: 0.85 }}
+                                    className="relative"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div
+                                      onClick={(e) => handleToggleCustomWithConfetti(item.id, item.isChecked, e)}
+                                      className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all cursor-pointer ${
+                                        item.isChecked
+                                          ? 'border-[var(--system-green)] bg-[var(--system-green)]'
+                                          : 'border-[var(--gray-2)] bg-transparent hover:border-[var(--gray-1)]'
+                                      }`}
+                                    >
+                                      {item.isChecked && (
+                                        <motion.div
+                                          initial={{ scale: 0 }}
+                                          animate={{ scale: 1 }}
+                                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                        >
+                                          <Check size={14} className="text-white" strokeWidth={3} />
+                                        </motion.div>
+                                      )}
+                                    </div>
                                   </motion.div>
                                   <span
                                     className={`flex-1 text-[15px] ${
@@ -669,8 +751,11 @@ export function ShoppingList() {
                                     {item.amount || '-'}
                                   </span>
                                   <motion.button
-                                    onClick={() => removeCustomShoppingItem(item.id)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--system-red)] bg-[var(--system-red)]/10"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeCustomShoppingItem(item.id);
+                                    }}
+                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--system-red)] bg-[var(--system-red)]/10 opacity-0 group-hover:opacity-100 transition-opacity"
                                     aria-label={`${item.name} löschen`}
                                     whileTap={{ scale: 0.9 }}
                                     whileHover={{ scale: 1.1 }}
