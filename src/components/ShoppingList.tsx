@@ -355,14 +355,14 @@ export function ShoppingList() {
 
           return (
             <div key={category}>
-              <motion.button
-                onClick={() => toggleCategory(category)}
-                className="flex min-h-[56px] w-full items-center justify-between px-5 py-4 text-left"
-                aria-expanded={isExpanded}
-                aria-controls={`category-${category}`}
-                whileTap={{ scale: 0.99 }}
-              >
-                <div className="flex items-center gap-3">
+              <div className="flex min-h-[56px] w-full items-center justify-between px-5 py-4">
+                <motion.button
+                  onClick={() => toggleCategory(category)}
+                  className="flex flex-1 items-center gap-3 text-left"
+                  aria-expanded={isExpanded}
+                  aria-controls={`category-${category}`}
+                  whileTap={{ scale: 0.99 }}
+                >
                   <motion.div
                     className="flex h-10 w-10 items-center justify-center rounded-full"
                     style={{ backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)` }}
@@ -375,22 +375,42 @@ export function ShoppingList() {
                   <span className="font-semibold text-[var(--foreground)]">
                     {categoryLabels[category]}
                   </span>
-                </div>
-                <div className="flex items-center gap-3">
+                </motion.button>
+
+                <div className="flex items-center gap-2">
+                  {/* Add Button */}
+                  <motion.button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartAddToCategory(category);
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${categoryColor} 15%, transparent)`,
+                      color: categoryColor
+                    }}
+                    whileTap={{ scale: 0.9 }}
+                    whileHover={{ scale: 1.1 }}
+                    aria-label={`Zu ${categoryLabels[category]} hinzufügen`}
+                  >
+                    <Plus size={16} />
+                  </motion.button>
+
                   <div className="glass-inner px-2.5 py-1 text-sm">
                     <span className="font-semibold" style={{ color: checked === total && total > 0 ? 'var(--system-green)' : 'var(--foreground-secondary)' }}>
                       {checked}
                     </span>
                     <span className="text-[var(--foreground-tertiary)]">/{total}</span>
                   </div>
-                  <motion.div
+                  <motion.button
+                    onClick={() => toggleCategory(category)}
                     animate={{ rotate: isExpanded ? 180 : 0 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                   >
                     <ChevronDown size={20} className="text-[var(--gray-2)]" />
-                  </motion.div>
+                  </motion.button>
                 </div>
-              </motion.button>
+              </div>
 
               <AnimatePresence>
                 {isExpanded && (
@@ -603,17 +623,16 @@ export function ShoppingList() {
                         </>
                       )}
 
-                      {/* Add to this category */}
-                      <div className="px-5 pt-3 pb-2">
-                        <AnimatePresence mode="wait">
-                          {addingToCategory === category ? (
-                            <motion.div
-                              key="add-form"
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              className="p-3 bg-[var(--fill-secondary)] rounded-[12px]"
-                            >
+                      {/* Add Form (appears when add button clicked) */}
+                      <AnimatePresence>
+                        {addingToCategory === category && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="px-5 pb-3 overflow-hidden"
+                          >
+                            <div className="p-3 bg-[var(--fill-secondary)] rounded-[12px]">
                               <div className="space-y-2">
                                 <input
                                   type="text"
@@ -650,24 +669,10 @@ export function ShoppingList() {
                                   Hinzufügen
                                 </motion.button>
                               </div>
-                            </motion.div>
-                          ) : (
-                            <motion.button
-                              key="add-button"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              onClick={() => handleStartAddToCategory(category)}
-                              className="flex w-full items-center justify-center gap-2 py-2.5 rounded-[10px] border border-dashed border-[var(--glass-border)] text-[13px] text-[var(--foreground-tertiary)] hover:border-[var(--system-blue)] hover:text-[var(--system-blue)] transition-colors"
-                              whileTap={{ scale: 0.98 }}
-                              style={{ borderColor: `color-mix(in srgb, ${categoryColor} 30%, transparent)` }}
-                            >
-                              <Plus size={14} />
-                              Hinzufügen
-                            </motion.button>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </motion.div>
                 )}
