@@ -276,6 +276,7 @@ export function ShoppingList() {
   };
 
   return (
+    <>
     <motion.section
       className="glass-card overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
@@ -776,6 +777,7 @@ export function ShoppingList() {
           );
         })}
       </div>
+    </motion.section>
 
       {/* Custom Item Form Modal */}
       <AnimatePresence>
@@ -908,6 +910,6 @@ export function ShoppingList() {
           </>
         )}
       </AnimatePresence>
-    </motion.section>
+    </>
   );
 }
