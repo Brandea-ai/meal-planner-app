@@ -68,8 +68,27 @@ export function Settings() {
   };
 
   const handleReset = () => {
-    if (window.confirm('Möchtest du deinen gesamten Fortschritt wirklich zurücksetzen?')) {
-      resetProgress();
+    if (window.confirm('Möchtest du ALLE Daten komplett löschen?\n\n• Fortschritt\n• Chat & Passwort\n• Geräte-Verbindung\n• Einkaufsliste\n\nDie App startet dann komplett neu.')) {
+      // Clear ALL localStorage entries
+      const keysToRemove = [
+        'meal-planner-device-id',
+        'meal-planner-progress',
+        'meal-planner-sender-name',
+        'meal-planner-call-user-id',
+        'meal-planner-e2e-password-hash',
+      ];
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      // Clear preparation checklist progress (prep-steps-1 through prep-steps-14)
+      for (let i = 1; i <= 20; i++) {
+        localStorage.removeItem(`prep-steps-${i}`);
+      }
+
+      // Clear sessionStorage
+      sessionStorage.removeItem('meal-planner-e2e-password');
+
+      // Reload the page to start fresh
+      window.location.reload();
     }
   };
 
@@ -396,10 +415,10 @@ export function Settings() {
             </motion.div>
             <div className="text-left">
               <span className="block font-semibold text-[var(--system-red)]">
-                Fortschritt zurücksetzen
+                Alles zurücksetzen
               </span>
               <span className="text-sm text-[var(--foreground-secondary)]">
-                Löscht alle Daten
+                Chat, Sync, Fortschritt - kompletter Neustart
               </span>
             </div>
           </div>
