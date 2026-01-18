@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Clock, Lightbulb, ChefHat, AlertTriangle } from 'lucide-react';
+import { X, Check, Clock, Lightbulb, ChefHat, AlertTriangle, Heart } from 'lucide-react';
 import { PreparationStep } from '@/types';
+import confetti from 'canvas-confetti';
 
 interface PreparationChecklistProps {
   isOpen: boolean;
@@ -12,6 +13,18 @@ interface PreparationChecklistProps {
   steps: PreparationStep[];
   mealId: number;
 }
+
+// Süße Liebes-Nachrichten für die Zubereitung
+const loveMessages = [
+  { message: "Danke mein Bebuliki! 💕", emoji: "👨‍🍳" },
+  { message: "Danke mein Schatz! 💖", emoji: "💝" },
+  { message: "Du bist die Beste! 🌟", emoji: "⭐" },
+  { message: "Ich liebe dich! ❤️", emoji: "💕" },
+  { message: "Du kochst so toll! 👩‍🍳", emoji: "🍳" },
+  { message: "Mein Liebling, danke! 💗", emoji: "😘" },
+  { message: "Du bist wunderbar! ✨", emoji: "🌈" },
+  { message: "Beste Köchin der Welt! 🏆", emoji: "👑" },
+];
 
 const overlayVariants = {
   hidden: { opacity: 0 },
@@ -41,6 +54,51 @@ const stepVariants = {
 
 export function PreparationChecklist({ isOpen, onClose, mealTitle, steps, mealId }: PreparationChecklistProps) {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [showLoveMessage, setShowLoveMessage] = useState(false);
+  const [currentLoveMessage, setCurrentLoveMessage] = useState(loveMessages[0]);
+
+  // Mini confetti for completing a step
+  const triggerStepConfetti = useCallback(() => {
+    confetti({
+      particleCount: 30,
+      spread: 50,
+      origin: { x: 0.5, y: 0.6 },
+      colors: ['#FF69B4', '#FF1493', '#FFB6C1', '#FFC0CB'],
+      ticks: 60,
+      gravity: 1.2,
+      scalar: 0.7,
+      disableForReducedMotion: true,
+    });
+  }, []);
+
+  // Big love confetti for completing all steps
+  const triggerLoveConfetti = useCallback(() => {
+    const duration = 2000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: 4,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.6 },
+        colors: ['#FF69B4', '#FF1493', '#E91E63', '#F44336', '#FFD700'],
+      });
+      confetti({
+        particleCount: 4,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.6 },
+        colors: ['#FF69B4', '#FF1493', '#E91E63', '#F44336', '#FFD700'],
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+
+    frame();
+  }, []);
 
   // Load completed steps from localStorage
   useEffect(() => {
@@ -56,15 +114,31 @@ export function PreparationChecklist({ isOpen, onClose, mealTitle, steps, mealId
   }, [completedSteps, mealId]);
 
   const toggleStep = (stepNumber: number) => {
-    setCompletedSteps((prev) =>
-      prev.includes(stepNumber)
+    setCompletedSteps((prev) => {
+      const isCurrentlyCompleted = prev.includes(stepNumber);
+      const newSteps = isCurrentlyCompleted
         ? prev.filter((s) => s !== stepNumber)
-        : [...prev, stepNumber]
-    );
+        : [...prev, stepNumber];
+
+      // Check if all steps are now completed
+      if (!isCurrentlyCompleted && newSteps.length === steps.length) {
+        // All steps completed! Show love message
+        const randomMessage = loveMessages[Math.floor(Math.random() * loveMessages.length)];
+        setCurrentLoveMessage(randomMessage);
+        setShowLoveMessage(true);
+        triggerLoveConfetti();
+      } else if (!isCurrentlyCompleted) {
+        // Single step completed
+        triggerStepConfetti();
+      }
+
+      return newSteps;
+    });
   };
 
   const resetSteps = () => {
     setCompletedSteps([]);
+    setShowLoveMessage(false);
   };
 
   const progress = steps.length > 0 ? (completedSteps.length / steps.length) * 100 : 0;
@@ -254,6 +328,63 @@ export function PreparationChecklist({ isOpen, onClose, mealTitle, steps, mealId
                 </button>
               </div>
             </div>
+
+            {/* Love Message Popup */}
+            <AnimatePresence>
+              {showLoveMessage && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-20"
+                  onClick={() => setShowLoveMessage(false)}
+                >
+                  <motion.div
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 300, damping: 20 }}
+                    className="bg-gradient-to-br from-pink-500 via-rose-500 to-red-500 p-6 rounded-[24px] mx-6 text-center shadow-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 0.6, repeat: Infinity }}
+                      className="text-6xl mb-4"
+                    >
+                      {currentLoveMessage.emoji}
+                    </motion.div>
+                    <motion.h3
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-2xl font-bold text-white mb-2"
+                    >
+                      {currentLoveMessage.message}
+                    </motion.h3>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                      className="text-white/80 text-sm mb-4"
+                    >
+                      Alle Schritte fertig! 🎉
+                    </motion.p>
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      onClick={() => setShowLoveMessage(false)}
+                      className="bg-white text-pink-500 font-semibold py-2.5 px-6 rounded-full flex items-center gap-2 mx-auto"
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Heart size={16} fill="currentColor" />
+                      Weiter
+                    </motion.button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </motion.div>
       )}

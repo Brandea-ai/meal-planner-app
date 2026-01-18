@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Clock, Globe, ChefHat, Sparkles, ListChecks } from 'lucide-react';
+import { Check, Clock, Globe, ChefHat, Sparkles, ListChecks, Heart } from 'lucide-react';
 import { Meal, MealType } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { getServingsLabel } from '@/utils/portionScaling';
 import { MealNoteEditor } from './MealNoteEditor';
 import { PreparationChecklist } from './PreparationChecklist';
+import confetti from 'canvas-confetti';
 
 interface MealCardProps {
   meal: Meal;
@@ -45,14 +46,63 @@ export function MealCard({ meal }: MealCardProps) {
   const isCompleted = progress.completedDays.includes(meal.day);
   const servings = progress.preferences.servings;
   const [isPreparationOpen, setIsPreparationOpen] = useState(false);
+  const [showThankYouMessage, setShowThankYouMessage] = useState(false);
 
   const mealType = meal.type as MealType;
+
+  // Riesen Feuerwerk Animation
+  const triggerFireworks = useCallback(() => {
+    const duration = 4000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 100 * (timeLeft / duration);
+
+      // Feuerwerk von verschiedenen Positionen
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        colors: ['#FF69B4', '#FF1493', '#FFD700', '#FF6347', '#00CED1', '#9400D3'],
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        colors: ['#FF69B4', '#FF1493', '#FFD700', '#FF6347', '#00CED1', '#9400D3'],
+      });
+    }, 250);
+
+    // Extra große Herzen-Explosion in der Mitte
+    setTimeout(() => {
+      confetti({
+        particleCount: 100,
+        spread: 100,
+        origin: { x: 0.5, y: 0.5 },
+        colors: ['#FF69B4', '#FF1493', '#E91E63', '#F44336'],
+        shapes: ['circle'],
+        scalar: 1.5,
+      });
+    }, 500);
+  }, []);
 
   const handleToggleComplete = () => {
     if (isCompleted) {
       uncompleteDay(meal.day);
     } else {
       completeDay(meal.day);
+      // Feuerwerk und Danke-Nachricht anzeigen
+      triggerFireworks();
+      setShowThankYouMessage(true);
     }
   };
 
@@ -282,6 +332,114 @@ export function MealCard({ meal }: MealCardProps) {
           mealId={meal.id}
         />
       )}
+
+      {/* Thank You Love Message */}
+      <AnimatePresence>
+        {showThankYouMessage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md"
+            onClick={() => setShowThankYouMessage(false)}
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -10 }}
+              animate={{ scale: 1, rotate: 0 }}
+              exit={{ scale: 0, rotate: 10 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.2 }}
+              className="bg-gradient-to-br from-pink-500 via-rose-500 to-red-500 p-8 rounded-[32px] mx-6 text-center shadow-2xl max-w-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Animated Hearts */}
+              <div className="relative mb-4">
+                <motion.div
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    rotate: [0, 10, -10, 0]
+                  }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="text-7xl"
+                >
+                  💖
+                </motion.div>
+                <motion.div
+                  animate={{ y: [-5, 5, -5], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute -top-2 -left-2 text-3xl"
+                >
+                  ✨
+                </motion.div>
+                <motion.div
+                  animate={{ y: [5, -5, 5], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                  className="absolute -top-2 -right-2 text-3xl"
+                >
+                  ✨
+                </motion.div>
+              </div>
+
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-2xl font-bold text-white mb-3"
+              >
+                Danke für das Essen!
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="text-white/95 text-lg mb-2"
+              >
+                Du bist die beste und
+              </motion.p>
+
+              <motion.p
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 300 }}
+                className="text-white text-xl font-bold mb-4"
+              >
+                schönste Frau der Welt! 👑
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="flex justify-center gap-2 mb-5"
+              >
+                {['❤️', '💕', '💖', '💗', '💝'].map((heart, i) => (
+                  <motion.span
+                    key={i}
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ duration: 0.5, delay: i * 0.1, repeat: Infinity, repeatDelay: 1 }}
+                    className="text-2xl"
+                  >
+                    {heart}
+                  </motion.span>
+                ))}
+              </motion.div>
+
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                onClick={() => setShowThankYouMessage(false)}
+                className="bg-white text-pink-500 font-bold py-3 px-8 rounded-full flex items-center gap-2 mx-auto shadow-lg"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Heart size={20} fill="currentColor" />
+                Ich liebe dich auch!
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
