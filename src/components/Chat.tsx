@@ -212,6 +212,7 @@ export function Chat({ onBack }: ChatProps) {
         isNewSetup={!isPasswordSetup}
         onPasswordSet={setPassword}
         verifyPassword={verifyPassword}
+        onBack={onBack}
       />
     );
   }

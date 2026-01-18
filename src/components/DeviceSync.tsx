@@ -143,8 +143,8 @@ export function DeviceSync({ onSync, onClose }: DeviceSyncProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="w-full max-w-sm rounded-t-[20px] bg-[var(--background)] p-6 sm:rounded-[20px]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-[20px] bg-[var(--background)] p-6">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           {mode !== 'choose' ? (

@@ -632,12 +632,12 @@ export function ShoppingList() {
                                       {scaledAmount}
                                     </span>
                                     <div
-                                      className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      className="flex items-center gap-1"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       <motion.button
                                         onClick={() => handleStartEdit(item)}
-                                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--foreground-secondary)] hover:bg-[var(--fill-secondary)]"
+                                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--foreground-secondary)] bg-[var(--fill-secondary)]"
                                         whileTap={{ scale: 0.9 }}
                                         aria-label={`${item.name} bearbeiten`}
                                       >
@@ -645,7 +645,7 @@ export function ShoppingList() {
                                       </motion.button>
                                       <motion.button
                                         onClick={() => handleDeleteItem(item.name)}
-                                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--system-red)] hover:bg-[var(--system-red)]/10"
+                                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--system-red)] bg-[var(--system-red)]/10"
                                         whileTap={{ scale: 0.9 }}
                                         aria-label={`${item.name} löschen`}
                                       >
@@ -755,10 +755,9 @@ export function ShoppingList() {
                                       e.stopPropagation();
                                       removeCustomShoppingItem(item.id);
                                     }}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--system-red)] bg-[var(--system-red)]/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--system-red)] bg-[var(--system-red)]/10"
                                     aria-label={`${item.name} löschen`}
                                     whileTap={{ scale: 0.9 }}
-                                    whileHover={{ scale: 1.1 }}
                                   >
                                     <Trash2 size={14} />
                                   </motion.button>

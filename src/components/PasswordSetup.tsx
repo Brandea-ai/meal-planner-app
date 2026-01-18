@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Lock, Eye, EyeOff, Shield, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Shield, AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface PasswordSetupProps {
   isNewSetup: boolean; // true = first time setup, false = login
   onPasswordSet: (password: string) => void;
   onError?: (error: string) => void;
   verifyPassword?: (password: string) => Promise<boolean>;
+  onBack?: () => void; // Optional back button handler
 }
 
 export function PasswordSetup({
@@ -15,6 +16,7 @@ export function PasswordSetup({
   onPasswordSet,
   onError,
   verifyPassword,
+  onBack,
 }: PasswordSetupProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -64,6 +66,19 @@ export function PasswordSetup({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--background)] p-6">
+      {/* Back Button */}
+      {onBack && (
+        <div className="fixed top-0 left-0 right-0 z-10 flex items-center p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+          <button
+            onClick={onBack}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--fill-tertiary)] text-[var(--foreground)] transition-none active:opacity-80"
+            aria-label="Zurück"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        </div>
+      )}
+
       <div className="w-full max-w-sm rounded-[20px] bg-[var(--background-secondary)] p-6 shadow-lg">
         {/* Icon */}
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--system-green)]/15">
