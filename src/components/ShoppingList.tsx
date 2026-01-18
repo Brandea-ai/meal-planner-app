@@ -800,12 +800,13 @@ export function ShoppingList() {
               className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className="fixed left-4 right-4 bottom-8 z-50 mx-auto max-w-md glass-card overflow-hidden"
+              className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
             >
+              <div className="pointer-events-auto mx-4 max-w-md w-full glass-card overflow-hidden">
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--system-blue)]/15">
@@ -842,6 +843,7 @@ export function ShoppingList() {
                   </motion.button>
                 </div>
               </div>
+              </div>
             </motion.div>
           </>
         )}
@@ -859,12 +861,13 @@ export function ShoppingList() {
               className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className="fixed left-4 right-4 bottom-8 z-50 mx-auto max-w-md glass-card overflow-hidden"
+              className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
             >
+              <div className="pointer-events-auto mx-4 max-w-md w-full glass-card overflow-hidden">
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--system-red)]/15">
@@ -900,6 +903,7 @@ export function ShoppingList() {
                     Löschen
                   </motion.button>
                 </div>
+              </div>
               </div>
             </motion.div>
           </>
