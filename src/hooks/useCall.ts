@@ -4,6 +4,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, getDeviceId } from '@/lib/supabase';
 import { CallType, CallState, CallSignal, CallSession } from '@/types';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import {
+  startIncomingCallAlert,
+  stopIncomingCallAlert,
+  startDialTone,
+  stopDialTone,
+  playConnectedSound,
+  playEndedSound,
+  requestNotificationPermission,
+} from '@/utils/callNotifications';
 
 // Free STUN servers for NAT traversal
 const ICE_SERVERS: RTCConfiguration = {
@@ -71,6 +80,11 @@ export function useCall(senderName: string): UseCallReturn {
 
   // Cleanup function
   const cleanup = useCallback(() => {
+    // Stop all sounds
+    stopIncomingCallAlert();
+    stopDialTone();
+    playEndedSound();
+
     // Stop local stream
     localStream?.getTracks().forEach(track => track.stop());
     setLocalStream(null);
@@ -156,6 +170,8 @@ export function useCall(senderName: string): UseCallReturn {
       console.log('Connection state:', pc.connectionState);
       if (pc.connectionState === 'connected') {
         setCallState('connected');
+        // Play connected sound
+        playConnectedSound();
       } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
         cleanup();
       }
@@ -197,6 +213,9 @@ export function useCall(senderName: string): UseCallReturn {
     setCallState('calling');
 
     try {
+      // Start dial tone (ringback tone)
+      startDialTone();
+
       // Broadcast call request to all family members
       await broadcastSignal('call-request', callType);
 
@@ -206,6 +225,7 @@ export function useCall(senderName: string): UseCallReturn {
     } catch (e) {
       console.error('Failed to start call:', e);
       setError('Anruf konnte nicht gestartet werden');
+      stopDialTone();
       cleanup();
     }
   }, [callState, broadcastSignal, getUserMedia, cleanup]);
@@ -213,6 +233,9 @@ export function useCall(senderName: string): UseCallReturn {
   // Accept incoming call
   const acceptCall = useCallback(async () => {
     if (!incomingCall || callState !== 'incoming') return;
+
+    // Stop ringtone and notification when accepting
+    stopIncomingCallAlert();
 
     setError(null);
     setCallState('connecting');
@@ -261,6 +284,9 @@ export function useCall(senderName: string): UseCallReturn {
   // Reject incoming call
   const rejectCall = useCallback(() => {
     if (!incomingCall) return;
+
+    // Stop ringtone and notification when rejecting
+    stopIncomingCallAlert();
 
     sendSignal(incomingCall.callUserId, 'call-reject', incomingCall.callType);
     setIncomingCall(null);
@@ -330,12 +356,22 @@ export function useCall(senderName: string): UseCallReturn {
             callUserId: senderCallUserId || signal.deviceId,
           });
           setCallState('incoming');
+
+          // Start ringtone and browser notification
+          startIncomingCallAlert(
+            signal.callerName,
+            signal.callType,
+            undefined, // onAccept handled by UI
+            undefined  // onReject handled by UI
+          );
         }
         break;
 
       case 'call-accept':
         // Call was accepted
         if (callState === 'calling' && isDirectSignal) {
+          // Stop dial tone when call is accepted
+          stopDialTone();
           setCallState('connecting');
 
           // Create session
@@ -370,6 +406,7 @@ export function useCall(senderName: string): UseCallReturn {
       case 'call-reject':
         // Call was rejected
         if (callState === 'calling') {
+          stopDialTone();
           setError('Anruf wurde abgelehnt');
           cleanup();
         }
@@ -377,6 +414,8 @@ export function useCall(senderName: string): UseCallReturn {
 
       case 'call-end':
         // Call ended by other party
+        stopDialTone();
+        stopIncomingCallAlert();
         cleanup();
         break;
 
@@ -431,6 +470,11 @@ export function useCall(senderName: string): UseCallReturn {
         break;
     }
   }, [callState, localStream, sendSignal, createPeerConnection, cleanup]);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
 
   // Setup realtime subscription for signals
   useEffect(() => {
