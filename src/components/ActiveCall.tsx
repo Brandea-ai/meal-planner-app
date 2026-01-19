@@ -9,6 +9,7 @@ import {
   VideoOff,
   User,
   RotateCcw,
+  Volume2,
 } from 'lucide-react';
 import { CallType, CallState } from '@/types';
 
@@ -39,6 +40,7 @@ export function ActiveCall({
 }: ActiveCallProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const [callDuration, setCallDuration] = useState(0);
   const [useFrontCamera, setUseFrontCamera] = useState(true);
 
@@ -53,6 +55,18 @@ export function ActiveCall({
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
+  // Attach remote stream to audio element (for audio calls or audio track of video calls)
+  useEffect(() => {
+    if (remoteAudioRef.current && remoteStream) {
+      console.log('🔊 Attaching remote audio stream');
+      remoteAudioRef.current.srcObject = remoteStream;
+      // Try to play immediately
+      remoteAudioRef.current.play().catch(e => {
+        console.warn('Audio autoplay blocked:', e);
+      });
     }
   }, [remoteStream]);
 
@@ -127,6 +141,14 @@ export function ActiveCall({
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-black">
+      {/* Hidden audio element for remote audio playback */}
+      <audio
+        ref={remoteAudioRef}
+        autoPlay
+        playsInline
+        style={{ display: 'none' }}
+      />
+
       {/* Video Area */}
       {callType === 'video' ? (
         <>

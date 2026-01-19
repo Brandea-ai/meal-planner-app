@@ -14,15 +14,23 @@ import {
   requestNotificationPermission,
 } from '@/utils/callNotifications';
 
-// ICE Servers for NAT traversal - includes TURN for restrictive networks
+// ICE Servers for NAT traversal - includes multiple TURN servers for reliability
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     // STUN servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
     // Free TURN servers from Open Relay Project
     {
       urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:80?transport=tcp',
       username: 'openrelayproject',
       credential: 'openrelayproject',
     },
@@ -224,19 +232,39 @@ export function useCall(senderName: string): UseCallReturn {
 
     // Handle connection state changes
     pc.onconnectionstatechange = () => {
-      console.log('Connection state:', pc.connectionState);
+      console.log('🔗 Connection state:', pc.connectionState);
       if (pc.connectionState === 'connected') {
+        console.log('✅ WebRTC VERBUNDEN!');
         setCallState('connected');
-        // Play connected sound
         playConnectedSound();
       } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        console.log('❌ WebRTC Verbindung fehlgeschlagen:', pc.connectionState);
         cleanup();
       }
     };
 
+    // Handle ICE connection state (more granular)
+    pc.oniceconnectionstatechange = () => {
+      console.log('🧊 ICE state:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'failed') {
+        console.log('❌ ICE Verbindung fehlgeschlagen - versuche Neustart');
+        pc.restartIce();
+      }
+    };
+
+    // Handle ICE gathering state
+    pc.onicegatheringstatechange = () => {
+      console.log('📡 ICE gathering:', pc.iceGatheringState);
+    };
+
+    // Handle signaling state
+    pc.onsignalingstatechange = () => {
+      console.log('📶 Signaling state:', pc.signalingState);
+    };
+
     // Handle incoming tracks
     pc.ontrack = (event) => {
-      console.log('Received remote track:', event.track.kind);
+      console.log('🎥 Received remote track:', event.track.kind, '- stream ID:', event.streams[0]?.id);
       setRemoteStream(event.streams[0]);
     };
 
@@ -331,6 +359,7 @@ export function useCall(senderName: string): UseCallReturn {
       const pc = createPeerConnection(incomingCall.callUserId, incomingCall.callType);
 
       // Add local tracks
+      console.log('📤 Receiver adding local tracks:', stream.getTracks().map(t => t.kind));
       stream.getTracks().forEach(track => {
         pc.addTrack(track, stream);
       });
@@ -414,7 +443,7 @@ export function useCall(senderName: string): UseCallReturn {
     switch (signal.signalType) {
       case 'call-request':
         // Incoming call (broadcast)
-        if (callState === 'idle' && isBroadcast) {
+        if (callStateRef.current === 'idle' && isBroadcast) {
           setIncomingCall({
             callerName: signal.callerName,
             callType: signal.callType,
@@ -434,7 +463,7 @@ export function useCall(senderName: string): UseCallReturn {
 
       case 'call-accept':
         // Call was accepted
-        if (callState === 'calling' && isDirectSignal) {
+        if (callStateRef.current === 'calling' && isDirectSignal) {
           // Stop dial tone when call is accepted
           stopDialTone();
           setCallState('connecting');
@@ -457,11 +486,12 @@ export function useCall(senderName: string): UseCallReturn {
           // Add local tracks - use ref for immediate access
           const stream = localStreamRef.current || localStream;
           if (stream) {
+            console.log('📤 Adding local tracks to peer connection:', stream.getTracks().map(t => t.kind));
             stream.getTracks().forEach(track => {
               pc.addTrack(track, stream);
             });
           } else {
-            console.error('No local stream available when call was accepted!');
+            console.error('❌ No local stream available when call was accepted!');
           }
 
           // Create and send offer
@@ -473,7 +503,7 @@ export function useCall(senderName: string): UseCallReturn {
 
       case 'call-reject':
         // Call was rejected
-        if (callState === 'calling') {
+        if (callStateRef.current === 'calling') {
           stopDialTone();
           setError('Anruf wurde abgelehnt');
           cleanup();
@@ -489,11 +519,40 @@ export function useCall(senderName: string): UseCallReturn {
 
       case 'offer':
         // Received SDP offer
-        if ((callState === 'incoming' || callState === 'connecting') && isDirectSignal) {
-          if (!peerConnectionRef.current) {
-            createPeerConnection(senderCallUserId, signal.callType);
+        if ((callStateRef.current === 'incoming' || callStateRef.current === 'connecting') && isDirectSignal) {
+          console.log('📥 Received offer, current PC:', !!peerConnectionRef.current);
+
+          // CRITICAL: Ensure we have a peer connection with local tracks
+          let pc = peerConnectionRef.current;
+          if (!pc) {
+            console.log('📥 Creating new PC for offer (fallback)');
+            pc = createPeerConnection(senderCallUserId, signal.callType);
           }
-          const pc = peerConnectionRef.current!;
+
+          // CRITICAL FIX: Ensure local tracks are added BEFORE creating answer
+          // This was missing and caused no audio to be sent!
+          const stream = localStreamRef.current || localStream;
+          if (stream && pc.getSenders().length === 0) {
+            console.log('📤 Adding local tracks in offer handler:', stream.getTracks().map(t => t.kind));
+            stream.getTracks().forEach(track => {
+              pc!.addTrack(track, stream);
+            });
+          } else if (!stream) {
+            console.error('❌ No local stream available when processing offer!');
+            // Try to get media now
+            try {
+              const newStream = await getUserMedia(signal.callType);
+              localStreamRef.current = newStream;
+              console.log('📤 Got media and adding tracks:', newStream.getTracks().map(t => t.kind));
+              newStream.getTracks().forEach(track => {
+                pc!.addTrack(track, newStream);
+              });
+            } catch (e) {
+              console.error('❌ Failed to get media in offer handler:', e);
+            }
+          }
+
+          console.log('📥 PC senders after track setup:', pc.getSenders().map(s => s.track?.kind));
 
           const sdpData = { ...signal.signalData } as Record<string, unknown>;
           delete sdpData.from_call_user_id;
@@ -523,7 +582,7 @@ export function useCall(senderName: string): UseCallReturn {
 
       case 'answer':
         // Received SDP answer
-        if (peerConnectionRef.current && (callState === 'calling' || callState === 'connecting') && isDirectSignal) {
+        if (peerConnectionRef.current && (callStateRef.current === 'calling' || callStateRef.current === 'connecting') && isDirectSignal) {
           const answerData = { ...signal.signalData } as Record<string, unknown>;
           delete answerData.from_call_user_id;
           const sdp = answerData as unknown as RTCSessionDescriptionInit;
@@ -575,7 +634,7 @@ export function useCall(senderName: string): UseCallReturn {
         }
         break;
     }
-  }, [callState, localStream, sendSignal, createPeerConnection, cleanup]);
+  }, [localStream, sendSignal, createPeerConnection, cleanup, getUserMedia]);
 
   // Request notification permission on mount
   useEffect(() => {
