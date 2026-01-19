@@ -96,6 +96,7 @@ export function useCall(senderName: string): UseCallReturn {
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const callTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const callStateRef = useRef<CallState>('idle');
+  const localStreamRef = useRef<MediaStream | null>(null);
 
   // Call timeout duration (30 seconds)
   const CALL_TIMEOUT = 30000;
@@ -118,7 +119,9 @@ export function useCall(senderName: string): UseCallReturn {
     stopDialTone();
     playEndedSound();
 
-    // Stop local stream
+    // Stop local stream (both ref and state)
+    localStreamRef.current?.getTracks().forEach(track => track.stop());
+    localStreamRef.current = null;
     localStream?.getTracks().forEach(track => track.stop());
     setLocalStream(null);
 
@@ -267,6 +270,11 @@ export function useCall(senderName: string): UseCallReturn {
     setCallState('calling');
 
     try {
+      // IMPORTANT: Get local media FIRST before sending call request
+      // This prevents race condition where call-accept arrives before media is ready
+      const stream = await getUserMedia(callType);
+      localStreamRef.current = stream;
+
       // Start dial tone (ringback tone)
       startDialTone();
 
@@ -280,9 +288,6 @@ export function useCall(senderName: string): UseCallReturn {
 
       // Broadcast call request to all family members
       await broadcastSignal('call-request', callType);
-
-      // Get local media
-      await getUserMedia(callType);
 
     } catch (e) {
       console.error('Failed to start call:', e);
@@ -320,6 +325,7 @@ export function useCall(senderName: string): UseCallReturn {
 
       // Get local media
       const stream = await getUserMedia(incomingCall.callType);
+      localStreamRef.current = stream;
 
       // Create peer connection
       const pc = createPeerConnection(incomingCall.callUserId, incomingCall.callType);
@@ -329,11 +335,8 @@ export function useCall(senderName: string): UseCallReturn {
         pc.addTrack(track, stream);
       });
 
-      // Process pending ICE candidates
-      for (const candidate of pendingCandidatesRef.current) {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-      pendingCandidatesRef.current = [];
+      // NOTE: Don't process pending ICE candidates here!
+      // They will be processed in handleSignal after remote description is set
 
       setIncomingCall(null);
     } catch (e) {
@@ -451,11 +454,14 @@ export function useCall(senderName: string): UseCallReturn {
           // Create peer connection and send offer
           const pc = createPeerConnection(senderCallUserId, signal.callType);
 
-          // Add local tracks
-          if (localStream) {
-            localStream.getTracks().forEach(track => {
-              pc.addTrack(track, localStream);
+          // Add local tracks - use ref for immediate access
+          const stream = localStreamRef.current || localStream;
+          if (stream) {
+            stream.getTracks().forEach(track => {
+              pc.addTrack(track, stream);
             });
+          } else {
+            console.error('No local stream available when call was accepted!');
           }
 
           // Create and send offer
@@ -494,6 +500,19 @@ export function useCall(senderName: string): UseCallReturn {
           const sdp = sdpData as unknown as RTCSessionDescriptionInit;
 
           await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+          // Process pending ICE candidates now that remote description is set
+          if (pendingCandidatesRef.current.length > 0) {
+            console.log(`Processing ${pendingCandidatesRef.current.length} pending ICE candidates after offer`);
+            for (const candidate of pendingCandidatesRef.current) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              } catch (e) {
+                console.warn('Failed to add pending ICE candidate:', e);
+              }
+            }
+            pendingCandidatesRef.current = [];
+          }
 
           // Create and send answer
           const answer = await pc.createAnswer();
