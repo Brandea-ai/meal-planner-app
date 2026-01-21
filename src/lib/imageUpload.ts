@@ -114,6 +114,21 @@ export async function uploadImage(
 
   onProgress?.(50);
 
+  // First, check if the bucket exists
+  const { error: bucketError } = await supabase.storage.getBucket('chat-media');
+
+  if (bucketError) {
+    console.error('Bucket check error:', bucketError);
+    // Bucket doesn't exist - provide helpful error message
+    throw new Error(
+      'Storage bucket "chat-media" does not exist. ' +
+      'Please create it in the Supabase Dashboard: Storage > New Bucket > ' +
+      'Name: chat-media, Public: Yes'
+    );
+  }
+
+  onProgress?.(60);
+
   // Upload to Supabase Storage
   const { data, error } = await supabase.storage
     .from('chat-media')
@@ -125,7 +140,20 @@ export async function uploadImage(
 
   if (error) {
     console.error('Upload error:', error);
-    throw new Error(`Upload failed: ${error.message}`);
+
+    // Provide more specific error messages
+    if (error.message.includes('Bucket not found')) {
+      throw new Error(
+        'Storage bucket nicht gefunden. Bitte erstellen Sie den Bucket "chat-media" im Supabase Dashboard.'
+      );
+    }
+    if (error.message.includes('row-level security') || error.message.includes('policy')) {
+      throw new Error(
+        'Keine Berechtigung zum Hochladen. Bitte überprüfen Sie die Storage-Richtlinien im Supabase Dashboard.'
+      );
+    }
+
+    throw new Error(`Upload fehlgeschlagen: ${error.message}`);
   }
 
   onProgress?.(90);
