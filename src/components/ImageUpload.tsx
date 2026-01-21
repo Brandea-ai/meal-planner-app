@@ -2,9 +2,8 @@
 
 import { useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ImagePlus, X, Loader2, Send, Camera, Image, FolderOpen } from 'lucide-react';
+import { ImagePlus, X, Loader2, Send, Camera, Image as ImageIcon } from 'lucide-react';
 import { ImageUploadProgress } from '@/types';
-import { isValidImageFile } from '@/lib/imageUpload';
 
 interface ImageUploadProps {
   onUpload: (file: File, caption?: string) => Promise<void>;
@@ -19,27 +18,21 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
   const [showPreview, setShowPreview] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
 
-  // Separate refs for different input types (iOS compatibility)
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const captionInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file type - be lenient for iOS camera images
+    // Basic image check
     const isImage = file.type.startsWith('image/') ||
-                    file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|heic|heif)$/);
+                    /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(file.name);
 
     if (!isImage) {
       alert('Bitte wähle ein Bild aus');
       return;
-    }
-
-    // Additional validation
-    if (!isValidImageFile(file)) {
-      // Still allow if it looks like an image (iOS sometimes has wrong MIME types)
-      console.warn('File type not in allowed list, but proceeding:', file.type, file.name);
     }
 
     setSelectedFile(file);
@@ -50,14 +43,26 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
     // Reset inputs
     if (galleryInputRef.current) galleryInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
+
+    // Focus caption input after short delay
+    setTimeout(() => captionInputRef.current?.focus(), 300);
   }, []);
 
   const handleSend = async () => {
     if (!selectedFile) return;
 
-    await onUpload(selectedFile, caption.trim() || undefined);
+    try {
+      await onUpload(selectedFile, caption.trim() || undefined);
 
-    // Clean up
+      // Clean up on success
+      cleanup();
+    } catch (error) {
+      console.error('Upload failed:', error);
+      // Don't cleanup on error - let user retry
+    }
+  };
+
+  const cleanup = () => {
     if (preview) {
       URL.revokeObjectURL(preview);
     }
@@ -68,30 +73,15 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
   };
 
   const handleCancel = () => {
-    if (preview) {
-      URL.revokeObjectURL(preview);
-    }
-    setSelectedFile(null);
-    setPreview(null);
-    setCaption('');
-    setShowPreview(false);
-  };
-
-  const openGallery = () => {
-    galleryInputRef.current?.click();
-  };
-
-  const openCamera = () => {
-    cameraInputRef.current?.click();
+    cleanup();
   };
 
   const isUploading = uploadProgress.status === 'compressing' || uploadProgress.status === 'uploading';
+  const hasError = uploadProgress.status === 'error';
 
   return (
     <>
-      {/* Hidden file inputs - separate for iOS compatibility */}
-
-      {/* Gallery/Photo Library Input */}
+      {/* Hidden file inputs */}
       <input
         ref={galleryInputRef}
         type="file"
@@ -100,8 +90,6 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
         className="hidden"
         disabled={disabled || isUploading}
       />
-
-      {/* Camera Input - iOS will show camera directly */}
       <input
         ref={cameraInputRef}
         type="file"
@@ -127,64 +115,50 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
         )}
       </motion.button>
 
-      {/* iOS-style Action Sheet */}
+      {/* Action Sheet */}
       <AnimatePresence>
         {showActionSheet && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-[100] bg-black/50"
               onClick={() => setShowActionSheet(false)}
             />
-
-            {/* Action Sheet */}
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-              className="fixed bottom-0 left-0 right-0 z-[101] p-3 pb-safe"
+              transition={{ type: 'spring', damping: 28, stiffness: 380 }}
+              className="fixed bottom-0 left-0 right-0 z-[101] px-3 pb-safe"
             >
-              {/* Options */}
-              <div className="glass-card overflow-hidden mb-2">
+              <div className="glass-card overflow-hidden rounded-2xl mb-2">
                 <button
-                  onClick={openCamera}
-                  className="flex w-full items-center gap-4 p-4 text-left active:bg-[var(--vibrancy-regular)] border-b border-[var(--glass-border)]"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="flex w-full items-center gap-4 p-4 active:bg-[var(--vibrancy-regular)] border-b border-[var(--glass-border)]"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-blue)]/15">
-                    <Camera size={20} className="text-[var(--system-blue)]" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--system-blue)]">
+                    <Camera size={22} className="text-white" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-[var(--foreground)]">Foto aufnehmen</p>
-                    <p className="text-xs text-[var(--foreground-tertiary)]">Mit der Kamera fotografieren</p>
-                  </div>
+                  <span className="text-[17px] font-medium text-[var(--foreground)]">Foto aufnehmen</span>
                 </button>
-
                 <button
-                  onClick={openGallery}
-                  className="flex w-full items-center gap-4 p-4 text-left active:bg-[var(--vibrancy-regular)]"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="flex w-full items-center gap-4 p-4 active:bg-[var(--vibrancy-regular)]"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-green)]/15">
-                    <Image size={20} className="text-[var(--system-green)]" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--system-green)]">
+                    <ImageIcon size={22} className="text-white" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-[var(--foreground)]">Aus Mediathek wählen</p>
-                    <p className="text-xs text-[var(--foreground-tertiary)]">Foto aus der Galerie auswählen</p>
-                  </div>
+                  <span className="text-[17px] font-medium text-[var(--foreground)]">Aus Fotos wählen</span>
                 </button>
               </div>
-
-              {/* Cancel Button */}
-              <motion.button
+              <button
                 onClick={() => setShowActionSheet(false)}
-                className="w-full glass-card p-4 text-center font-semibold text-[var(--system-blue)]"
-                whileTap={{ scale: 0.98 }}
+                className="w-full glass-card rounded-2xl p-4 text-center text-[17px] font-semibold text-[var(--system-blue)]"
               >
                 Abbrechen
-              </motion.button>
+              </button>
             </motion.div>
           </>
         )}
@@ -197,89 +171,88 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[100] flex flex-col bg-black"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 safe-area-top">
+            <div className="flex items-center justify-between p-4 pt-safe">
               <motion.button
                 onClick={handleCancel}
                 disabled={isUploading}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white disabled:opacity-50"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white disabled:opacity-50"
                 whileTap={{ scale: 0.95 }}
               >
                 <X size={24} />
               </motion.button>
-              <h2 className="text-lg font-semibold text-white">Bild senden</h2>
-              <div className="w-10" /> {/* Spacer */}
+              <span className="text-[17px] font-semibold text-white">Bild senden</span>
+              <div className="w-10" />
             </div>
 
-            {/* Image Preview */}
-            <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+            {/* Image */}
+            <div className="flex-1 flex items-center justify-center p-4 min-h-0">
               <motion.img
                 src={preview}
-                alt="Preview"
-                className="max-w-full max-h-full object-contain rounded-xl"
-                initial={{ scale: 0.9, opacity: 0 }}
+                alt="Vorschau"
+                className="max-w-full max-h-full object-contain rounded-2xl"
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               />
             </div>
 
-            {/* Progress Bar */}
-            <AnimatePresence>
-              {isUploading && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className="px-4 pb-2"
-                >
-                  <div className="glass-card p-3">
-                    <div className="flex items-center gap-3">
-                      <Loader2 size={20} className="animate-spin text-[var(--system-blue)]" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-white">
-                          {uploadProgress.status === 'compressing' ? 'Komprimiere...' : 'Lade hoch...'}
-                        </p>
-                        <div className="mt-1.5 h-1.5 w-full rounded-full bg-white/20 overflow-hidden">
-                          <motion.div
-                            className="h-full bg-[var(--system-blue)] rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${uploadProgress.progress}%` }}
-                            transition={{ duration: 0.3 }}
-                          />
-                        </div>
-                      </div>
-                      <span className="text-sm text-white/70">{uploadProgress.progress}%</span>
+            {/* Progress */}
+            {isUploading && (
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-3 bg-white/10 rounded-2xl p-4">
+                  <Loader2 size={24} className="animate-spin text-white" />
+                  <div className="flex-1">
+                    <p className="text-[15px] font-medium text-white">
+                      {uploadProgress.status === 'compressing' ? 'Wird komprimiert...' : 'Wird gesendet...'}
+                    </p>
+                    <div className="mt-2 h-1 bg-white/20 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-[var(--system-blue)]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${uploadProgress.progress}%` }}
+                      />
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              </div>
+            )}
 
-            {/* Caption Input & Send */}
+            {/* Error */}
+            {hasError && (
+              <div className="px-4 py-3">
+                <div className="bg-[var(--system-red)]/20 rounded-2xl p-4 text-center">
+                  <p className="text-[15px] text-[var(--system-red)]">
+                    {uploadProgress.error || 'Fehler beim Senden'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Input & Send */}
             <div className="p-4 pb-safe">
-              <div className="flex items-end gap-2">
+              <div className="flex items-center gap-3">
                 <input
+                  ref={captionInputRef}
                   type="text"
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Beschreibung hinzufügen..."
+                  placeholder="Nachricht hinzufügen..."
                   disabled={isUploading}
-                  className="flex-1 glass-card rounded-[20px] px-4 py-3 text-[15px] text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[var(--system-blue)] disabled:opacity-50"
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && !isUploading && handleSend()}
+                  className="flex-1 bg-white/10 rounded-full px-5 py-3.5 text-[17px] text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 disabled:opacity-50"
+                  onKeyDown={(e) => e.key === 'Enter' && !isUploading && handleSend()}
                 />
                 <motion.button
                   onClick={handleSend}
                   disabled={isUploading}
-                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[var(--system-blue)] text-white disabled:opacity-50"
-                  aria-label="Senden"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--system-blue)] text-white disabled:opacity-50"
                   whileTap={{ scale: 0.95 }}
                 >
                   {isUploading ? (
-                    <Loader2 size={20} className="animate-spin" />
+                    <Loader2 size={22} className="animate-spin" />
                   ) : (
-                    <Send size={20} />
+                    <Send size={22} />
                   )}
                 </motion.button>
               </div>

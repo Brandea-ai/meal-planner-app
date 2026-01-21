@@ -1,23 +1,22 @@
 'use client';
 
-import { supabase, getDeviceId } from '@/lib/supabase';
 import { ChatMediaType } from '@/types';
 
-// Maximum image dimensions for compression
-const MAX_WIDTH = 1920;
-const MAX_HEIGHT = 1920;
-const QUALITY = 0.85;
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+// Maximum image dimensions for compression - smaller for DB storage
+const MAX_WIDTH = 1200;
+const MAX_HEIGHT = 1200;
+const QUALITY = 0.75;
+const MAX_BASE64_SIZE = 500 * 1024; // 500KB max for DB storage
 
 export interface CompressedImage {
-  blob: Blob;
+  dataUrl: string;  // Base64 data URL
   width: number;
   height: number;
   mimeType: ChatMediaType;
 }
 
 export interface UploadResult {
-  url: string;
+  url: string;  // Base64 data URL (stored directly in DB)
   width: number;
   height: number;
   mimeType: ChatMediaType;
@@ -27,14 +26,30 @@ export interface UploadResult {
  * Check if browser supports WebP encoding
  */
 function supportsWebP(): boolean {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1;
-  canvas.height = 1;
-  return canvas.toDataURL('image/webp').startsWith('data:image/webp');
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas.toDataURL('image/webp').startsWith('data:image/webp');
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Compress an image file to reduce size while maintaining quality
+ * Convert blob to base64 data URL
+ */
+function blobToDataURL(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Failed to convert to base64'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Compress an image file and return as base64 data URL
  */
 export async function compressImage(file: File): Promise<CompressedImage> {
   return new Promise((resolve, reject) => {
@@ -47,7 +62,10 @@ export async function compressImage(file: File): Promise<CompressedImage> {
       return;
     }
 
-    img.onload = () => {
+    img.onload = async () => {
+      // Revoke object URL after loading
+      URL.revokeObjectURL(img.src);
+
       let { width, height } = img;
 
       // Calculate new dimensions maintaining aspect ratio
@@ -65,133 +83,70 @@ export async function compressImage(file: File): Promise<CompressedImage> {
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Determine output format - use WebP if supported, otherwise JPEG
-      const useWebP = supportsWebP();
-      const outputType: ChatMediaType = useWebP ? 'image/webp' : 'image/jpeg';
+      // Use JPEG for better compression (base64 size matters)
+      const outputType: ChatMediaType = 'image/jpeg';
+      let quality = QUALITY;
 
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            // Fallback to JPEG if blob creation failed
-            canvas.toBlob(
-              (jpegBlob) => {
-                if (!jpegBlob) {
-                  reject(new Error('Image compression failed'));
-                  return;
-                }
-                resolve({
-                  blob: jpegBlob,
-                  width,
-                  height,
-                  mimeType: 'image/jpeg',
-                });
-              },
-              'image/jpeg',
-              QUALITY
-            );
-            return;
-          }
+      // Try to compress to target size
+      let dataUrl = canvas.toDataURL(outputType, quality);
 
-          // If still too large, reduce quality further
-          if (blob.size > MAX_FILE_SIZE) {
-            canvas.toBlob(
-              (reducedBlob) => {
-                if (!reducedBlob) {
-                  reject(new Error('Image compression failed'));
-                  return;
-                }
-                resolve({
-                  blob: reducedBlob,
-                  width,
-                  height,
-                  mimeType: outputType,
-                });
-              },
-              outputType,
-              0.6
-            );
-          } else {
-            resolve({
-              blob,
-              width,
-              height,
-              mimeType: outputType,
-            });
-          }
-        },
-        outputType,
-        QUALITY
-      );
+      // Reduce quality until under max size
+      while (dataUrl.length > MAX_BASE64_SIZE && quality > 0.3) {
+        quality -= 0.1;
+        dataUrl = canvas.toDataURL(outputType, quality);
+      }
+
+      // If still too large, reduce dimensions
+      if (dataUrl.length > MAX_BASE64_SIZE) {
+        const scale = Math.sqrt(MAX_BASE64_SIZE / dataUrl.length);
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        dataUrl = canvas.toDataURL(outputType, 0.7);
+        width = canvas.width;
+        height = canvas.height;
+      }
+
+      resolve({
+        dataUrl,
+        width,
+        height,
+        mimeType: outputType,
+      });
     };
 
     img.onerror = () => {
-      reject(new Error('Failed to load image'));
+      URL.revokeObjectURL(img.src);
+      reject(new Error('Bild konnte nicht geladen werden'));
     };
 
-    // Load image from file - use createObjectURL for better iOS compatibility
+    // Load image from file
     img.src = URL.createObjectURL(file);
   });
 }
 
 /**
- * Upload an image to Supabase Storage
+ * Process image and return base64 data URL for direct DB storage
+ * No Supabase Storage needed!
  */
 export async function uploadImage(
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<UploadResult> {
-  const deviceId = getDeviceId();
-
-  if (!deviceId) {
-    throw new Error('Device ID not available');
-  }
-
-  // Notify compression start
   onProgress?.(10);
 
   // Compress the image
   const compressed = await compressImage(file);
-  onProgress?.(30);
 
-  // Generate unique filename
-  const timestamp = Date.now();
-  const randomId = crypto.randomUUID().slice(0, 8);
-  const extensionMap: Record<string, string> = {
-    'image/webp': 'webp',
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/gif': 'gif',
-  };
-  const extension = extensionMap[compressed.mimeType] || 'jpg';
-  const filename = `${deviceId}/${timestamp}-${randomId}.${extension}`;
+  onProgress?.(80);
 
-  onProgress?.(40);
-
-  // Upload to Supabase Storage
-  const { data, error } = await supabase.storage
-    .from('chat-media')
-    .upload(filename, compressed.blob, {
-      contentType: compressed.mimeType,
-      cacheControl: '31536000', // 1 year cache
-      upsert: false,
-    });
-
-  if (error) {
-    console.error('Upload error:', error);
-    throw new Error(`Upload fehlgeschlagen: ${error.message}`);
-  }
-
-  onProgress?.(90);
-
-  // Get public URL
-  const { data: urlData } = supabase.storage
-    .from('chat-media')
-    .getPublicUrl(data.path);
-
+  // No actual upload needed - return base64 directly
   onProgress?.(100);
 
   return {
-    url: urlData.publicUrl,
+    url: compressed.dataUrl,  // Base64 data URL stored in DB
     width: compressed.width,
     height: compressed.height,
     mimeType: compressed.mimeType,
@@ -199,27 +154,10 @@ export async function uploadImage(
 }
 
 /**
- * Delete an image from Supabase Storage
+ * Delete an image - no-op for base64 storage (deleted with message)
  */
-export async function deleteImage(url: string): Promise<void> {
-  // Extract path from URL
-  const urlObj = new URL(url);
-  const pathMatch = urlObj.pathname.match(/\/chat-media\/(.+)$/);
-
-  if (!pathMatch) {
-    console.warn('Could not extract path from URL:', url);
-    return;
-  }
-
-  const path = pathMatch[1];
-
-  const { error } = await supabase.storage
-    .from('chat-media')
-    .remove([path]);
-
-  if (error) {
-    console.warn('Failed to delete image:', error);
-  }
+export async function deleteImage(_url: string): Promise<void> {
+  // No-op for base64 storage - image is deleted with the message
 }
 
 /**
@@ -232,12 +170,12 @@ export function isValidImageFile(file: File): boolean {
     'image/png',
     'image/webp',
     'image/gif',
-    'image/heic',      // iPhone camera format
-    'image/heif',      // iPhone camera format
-    'image/jpg',       // Alternative JPEG
+    'image/heic',
+    'image/heif',
+    'image/jpg',
   ];
 
-  // Also check file extension as fallback (some browsers don't set MIME type correctly)
+  // Also check file extension as fallback
   const extension = file.name.toLowerCase().split('.').pop();
   const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
