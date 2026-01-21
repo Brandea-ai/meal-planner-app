@@ -1,168 +1,152 @@
 'use client';
 
+import { supabase, getDeviceId } from '@/lib/supabase';
 import { ChatMediaType } from '@/types';
 
-// Maximum image dimensions for compression - smaller for DB storage
-const MAX_WIDTH = 1200;
-const MAX_HEIGHT = 1200;
-const QUALITY = 0.75;
-const MAX_BASE64_SIZE = 500 * 1024; // 500KB max for DB storage
-
-export interface CompressedImage {
-  dataUrl: string;  // Base64 data URL
-  width: number;
-  height: number;
-  mimeType: ChatMediaType;
-}
+// Maximum image dimensions for compression
+const MAX_WIDTH = 1600;
+const MAX_HEIGHT = 1600;
+const QUALITY = 0.82;
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
 
 export interface UploadResult {
-  url: string;  // Base64 data URL (stored directly in DB)
+  url: string;
   width: number;
   height: number;
   mimeType: ChatMediaType;
 }
 
 /**
- * Check if browser supports WebP encoding
+ * Compress an image and return as Blob
  */
-function supportsWebP(): boolean {
-  try {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    return canvas.toDataURL('image/webp').startsWith('data:image/webp');
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Convert blob to base64 data URL
- */
-function blobToDataURL(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('Failed to convert to base64'));
-    reader.readAsDataURL(blob);
-  });
-}
-
-/**
- * Compress an image file and return as base64 data URL
- */
-export async function compressImage(file: File): Promise<CompressedImage> {
+async function compressImage(file: File): Promise<{ blob: Blob; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
 
-    if (!ctx) {
-      reject(new Error('Canvas context not available'));
-      return;
-    }
-
-    img.onload = async () => {
-      // Revoke object URL after loading
+    img.onload = () => {
       URL.revokeObjectURL(img.src);
 
       let { width, height } = img;
 
-      // Calculate new dimensions maintaining aspect ratio
+      // Scale down if needed
       if (width > MAX_WIDTH || height > MAX_HEIGHT) {
         const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
         width = Math.round(width * ratio);
         height = Math.round(height * ratio);
       }
 
+      const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
 
-      // Draw image with white background (for transparency)
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas not supported'));
+        return;
+      }
+
+      // White background
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Use JPEG for better compression (base64 size matters)
-      const outputType: ChatMediaType = 'image/jpeg';
-      let quality = QUALITY;
+      // Convert to JPEG blob
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Compression failed'));
+            return;
+          }
 
-      // Try to compress to target size
-      let dataUrl = canvas.toDataURL(outputType, quality);
-
-      // Reduce quality until under max size
-      while (dataUrl.length > MAX_BASE64_SIZE && quality > 0.3) {
-        quality -= 0.1;
-        dataUrl = canvas.toDataURL(outputType, quality);
-      }
-
-      // If still too large, reduce dimensions
-      if (dataUrl.length > MAX_BASE64_SIZE) {
-        const scale = Math.sqrt(MAX_BASE64_SIZE / dataUrl.length);
-        canvas.width = Math.round(width * scale);
-        canvas.height = Math.round(height * scale);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        dataUrl = canvas.toDataURL(outputType, 0.7);
-        width = canvas.width;
-        height = canvas.height;
-      }
-
-      resolve({
-        dataUrl,
-        width,
-        height,
-        mimeType: outputType,
-      });
+          // If too large, reduce quality
+          if (blob.size > MAX_FILE_SIZE) {
+            canvas.toBlob(
+              (smallerBlob) => {
+                if (!smallerBlob) {
+                  reject(new Error('Compression failed'));
+                  return;
+                }
+                resolve({ blob: smallerBlob, width, height });
+              },
+              'image/jpeg',
+              0.6
+            );
+          } else {
+            resolve({ blob, width, height });
+          }
+        },
+        'image/jpeg',
+        QUALITY
+      );
     };
 
     img.onerror = () => {
       URL.revokeObjectURL(img.src);
-      reject(new Error('Bild konnte nicht geladen werden'));
+      reject(new Error('Could not load image'));
     };
 
-    // Load image from file
     img.src = URL.createObjectURL(file);
   });
 }
 
 /**
- * Process image and return base64 data URL for direct DB storage
- * No Supabase Storage needed!
+ * Upload image to Supabase Storage
  */
 export async function uploadImage(
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<UploadResult> {
-  onProgress?.(10);
+  const deviceId = getDeviceId();
+  if (!deviceId) {
+    throw new Error('Device ID not available');
+  }
 
-  // Compress the image
-  const compressed = await compressImage(file);
+  onProgress?.(5);
 
-  onProgress?.(80);
+  // Compress
+  const { blob, width, height } = await compressImage(file);
+  onProgress?.(40);
 
-  // No actual upload needed - return base64 directly
+  // Generate filename
+  const timestamp = Date.now();
+  const randomId = crypto.randomUUID().slice(0, 8);
+  const filename = `${deviceId}/${timestamp}-${randomId}.jpg`;
+
+  onProgress?.(50);
+
+  // Upload to Supabase Storage
+  const { data, error } = await supabase.storage
+    .from('chat-media')
+    .upload(filename, blob, {
+      contentType: 'image/jpeg',
+      cacheControl: '31536000',
+      upsert: false,
+    });
+
+  if (error) {
+    console.error('Upload error:', error);
+    throw new Error(`Upload failed: ${error.message}`);
+  }
+
+  onProgress?.(90);
+
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from('chat-media')
+    .getPublicUrl(data.path);
+
   onProgress?.(100);
 
   return {
-    url: compressed.dataUrl,  // Base64 data URL stored in DB
-    width: compressed.width,
-    height: compressed.height,
-    mimeType: compressed.mimeType,
+    url: urlData.publicUrl,
+    width,
+    height,
+    mimeType: 'image/jpeg',
   };
 }
 
 /**
- * Delete an image - no-op for base64 storage (deleted with message)
- */
-export async function deleteImage(_url: string): Promise<void> {
-  // No-op for base64 storage - image is deleted with the message
-}
-
-/**
- * Validate if a file is a valid image
- * Accepts common image types including HEIC/HEIF from iPhone cameras
+ * Validate image file
  */
 export function isValidImageFile(file: File): boolean {
   const validTypes = [
@@ -172,29 +156,26 @@ export function isValidImageFile(file: File): boolean {
     'image/gif',
     'image/heic',
     'image/heif',
-    'image/jpg',
   ];
 
-  // Also check file extension as fallback
-  const extension = file.name.toLowerCase().split('.').pop();
-  const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
+  const ext = file.name.toLowerCase().split('.').pop();
+  const validExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
 
   return validTypes.includes(file.type.toLowerCase()) ||
-         (extension ? validExtensions.includes(extension) : false);
+         (ext ? validExts.includes(ext) : false);
 }
 
 /**
- * Get image dimensions from a file
+ * Delete image from storage
  */
-export function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      resolve({ width: img.width, height: img.height });
-    };
-    img.onerror = () => {
-      reject(new Error('Failed to load image'));
-    };
-    img.src = URL.createObjectURL(file);
-  });
+export async function deleteImage(url: string): Promise<void> {
+  try {
+    const urlObj = new URL(url);
+    const match = urlObj.pathname.match(/\/chat-media\/(.+)$/);
+    if (match) {
+      await supabase.storage.from('chat-media').remove([match[1]]);
+    }
+  } catch (e) {
+    console.warn('Failed to delete image:', e);
+  }
 }
