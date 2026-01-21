@@ -172,26 +172,44 @@ export function ChatImage({
           </div>
         </div>
 
-        {/* Rating display (if rated) */}
-        {rating && rating > 0 && (
-          <div className={`mt-2 flex items-center gap-1.5 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-            {renderStars(false, 14)}
-            <span className={`text-xs font-medium ${
-              isOwnMessage ? 'text-white/60' : 'text-[var(--foreground-tertiary)]'
-            }`}>
-              {rating}/5
-            </span>
-          </div>
-        )}
-
-        {/* "Tap to rate" hint if not rated */}
-        {!rating && onRate && (
-          <div className={`mt-1.5 ${isOwnMessage ? 'text-right' : 'text-left'}`}>
-            <span className={`text-[11px] ${
-              isOwnMessage ? 'text-white/40' : 'text-[var(--foreground-tertiary)]/60'
-            }`}>
-              Tippen zum Bewerten
-            </span>
+        {/* Interactive rating directly in chat */}
+        {onRate && (
+          <div
+            className={`mt-2 flex items-center gap-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <motion.button
+                  key={star}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRate(star);
+                  }}
+                  className="touch-manipulation p-0.5"
+                  whileTap={{ scale: 1.3 }}
+                >
+                  <Star
+                    size={18}
+                    className={`transition-all duration-150 ${
+                      star <= (rating || 0)
+                        ? 'fill-yellow-400 text-yellow-400 drop-shadow-sm'
+                        : isOwnMessage
+                          ? 'text-white/30 hover:text-yellow-400/60'
+                          : 'text-[var(--foreground-tertiary)]/40 hover:text-yellow-400/60'
+                    }`}
+                  />
+                </motion.button>
+              ))}
+            </div>
+            {rating && rating > 0 && (
+              <span className={`text-xs ${
+                isOwnMessage ? 'text-white/50' : 'text-[var(--foreground-tertiary)]'
+              }`}>
+                {rating === 5 ? '🎉' : rating === 4 ? '👍' : rating === 3 ? '👌' : rating === 2 ? '😕' : '😞'}
+              </span>
+            )}
           </div>
         )}
       </motion.div>
