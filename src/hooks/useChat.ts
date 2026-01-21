@@ -25,6 +25,7 @@ interface UseChatReturn {
   sendMessage: (message: NewChatMessage) => Promise<void>;
   updateMessage: (messageId: string, newText: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
+  rateMessage: (messageId: string, rating: number) => Promise<void>;
   exportChat: () => ChatExport;
   senderName: string;
   setSenderName: (name: string) => void;
@@ -469,6 +470,34 @@ export function useChat(): UseChatReturn {
     }
   }, []);
 
+  // Rate a message (for images/food ratings)
+  const rateMessage = useCallback(async (messageId: string, rating: number) => {
+    if (rating < 1 || rating > 5) return;
+
+    try {
+      const { error: rateError } = await supabase
+        .from('chat_messages')
+        .update({
+          rating,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', messageId);
+
+      if (rateError) {
+        console.warn('Error rating message:', rateError);
+        setError('Bewertung konnte nicht gespeichert werden');
+      } else {
+        // Optimistically update local state
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, rating } : m))
+        );
+      }
+    } catch (e) {
+      console.warn('Failed to rate message:', e);
+      setError('Bewertung konnte nicht gespeichert werden');
+    }
+  }, []);
+
   // Export chat as JSON for AI processing (decrypted)
   const exportChat = useCallback((): ChatExport => {
     const deviceId = deviceIdRef.current;
@@ -679,6 +708,7 @@ export function useChat(): UseChatReturn {
     sendMessage,
     updateMessage,
     deleteMessage,
+    rateMessage,
     exportChat,
     senderName,
     setSenderName,

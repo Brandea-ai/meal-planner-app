@@ -53,6 +53,7 @@ export function Chat({ onBack }: ChatProps) {
     sendMessage,
     updateMessage,
     deleteMessage,
+    rateMessage,
     senderName,
     setSenderName,
     isEncrypted,
@@ -689,6 +690,10 @@ export function Chat({ onBack }: ChatProps) {
                                     width={message.mediaWidth}
                                     height={message.mediaHeight}
                                     isOwnMessage={isOwnMessage}
+                                    messageId={message.id}
+                                    rating={message.rating}
+                                    onRate={(rating) => rateMessage(message.id, rating)}
+                                    caption={message.message}
                                   />
                                 </div>
                               )}
