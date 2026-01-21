@@ -112,21 +112,6 @@ export async function uploadImage(
   const randomId = crypto.randomUUID().slice(0, 8);
   const filename = `${deviceId}/${timestamp}-${randomId}.jpg`;
 
-  onProgress?.(50);
-
-  // First, check if the bucket exists
-  const { error: bucketError } = await supabase.storage.getBucket('chat-media');
-
-  if (bucketError) {
-    console.error('Bucket check error:', bucketError);
-    // Bucket doesn't exist - provide helpful error message
-    throw new Error(
-      'Storage bucket "chat-media" does not exist. ' +
-      'Please create it in the Supabase Dashboard: Storage > New Bucket > ' +
-      'Name: chat-media, Public: Yes'
-    );
-  }
-
   onProgress?.(60);
 
   // Upload to Supabase Storage

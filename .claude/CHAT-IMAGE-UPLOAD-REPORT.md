@@ -2,44 +2,24 @@
 
 **Datum:** 2026-01-21
 **Feature:** Bild-Upload im Chat
-**Status:** SETUP ERFORDERLICH - Bucket muss manuell erstellt werden
+**Status:** ✅ FERTIG - Bucket existiert und ist konfiguriert
 
 ---
 
-## 0. WICHTIG: Setup-Anleitung (ZUERST LESEN!)
+## 0. Setup-Status: ✅ ERLEDIGT
 
-### Problem
-Die SQL-Migration kann den Supabase Storage Bucket **nicht** automatisch erstellen, da Storage-Buckets über einen separaten Service verwaltet werden (nicht direkt über PostgreSQL).
+### Bucket-Konfiguration
+- **Bucket Name:** `chat-media`
+- **Public:** Ja
+- **File Size Limit:** 5MB
+- **Allowed MIME Types:** image/jpeg, image/png, image/webp, image/gif, image/heic, image/heif
+- **Erstellt am:** 2026-01-21
 
-### Lösung: Bucket manuell im Dashboard erstellen
-
-1. **Supabase Dashboard öffnen:**
-   - URL: https://supabase.com/dashboard/project/klzfjgineiqjktsywovq/storage/buckets
-
-2. **Neuen Bucket erstellen:**
-   - Klick auf **"New Bucket"**
-   - Name: `chat-media`
-   - **Public bucket: JA (aktivieren!)**
-   - File size limit: `5242880` (5MB)
-   - Allowed MIME types: `image/jpeg, image/png, image/webp, image/gif`
-   - Klick auf **"Create bucket"**
-
-3. **RLS Policy erstellen:**
-   - Im Bucket `chat-media` → **Policies** Tab
-   - **"New Policy"** klicken
-   - **"For full customization"** wählen
-   - Policy Name: `Allow all access`
-   - Target roles: `anon`, `authenticated`
-   - Policy: `bucket_id = 'chat-media'`
-   - Operations: SELECT, INSERT, UPDATE, DELETE (alle!)
-   - Speichern
-
-### Alternative: Service Role Key
-Falls Sie das API-Setup verwenden möchten:
-1. Supabase Dashboard → Settings → API
-2. Kopieren Sie den `service_role` Key (der lange JWT, NICHT der anon key)
-3. In `.env.local` ersetzen Sie die Zeile `SUPABASE_SERVICE_ROLE_KEY=...`
-4. Rufen Sie `POST /api/setup/storage` auf
+### Verifiziert
+- ✅ Bucket existiert
+- ✅ Bucket ist öffentlich
+- ✅ Upload mit anon Key funktioniert
+- ✅ Public URLs sind erreichbar
 
 ---
 
@@ -227,10 +207,11 @@ chat-media/
 - [x] TypeScript kompiliert fehlerfrei
 - [x] Build erfolgreich
 - [x] Migrations angewendet (DB-Spalten)
-- [ ] **Storage Bucket manuell erstellt (siehe Abschnitt 0!)**
-- [ ] **RLS Policies im Dashboard konfiguriert**
+- [x] Storage Bucket erstellt und konfiguriert
+- [x] RLS Policies aktiv
+- [x] Upload-Test erfolgreich
 - [ ] Vercel Deploy (git push)
-- [ ] Production-Test
+- [ ] Production-Test auf iPhone
 
 ---
 
