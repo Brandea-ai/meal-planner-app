@@ -703,8 +703,8 @@ export function Chat({ onBack }: ChatProps) {
                                 <p className="text-[15px] leading-relaxed">{message.message}</p>
                               )}
 
-                              {/* Rating stars */}
-                              {message.rating && (
+                              {/* Rating stars - only for text-only feedback messages (not images) */}
+                              {message.rating && !message.mediaUrl && (
                                 <div className="mt-2 flex gap-0.5">
                                   {[1, 2, 3, 4, 5].map((star) => (
                                     <Star
@@ -714,10 +714,10 @@ export function Chat({ onBack }: ChatProps) {
                                         star <= message.rating!
                                           ? isOwnMessage
                                             ? 'fill-white text-white'
-                                            : 'fill-[var(--system-yellow)] text-[var(--system-yellow)]'
+                                            : 'fill-yellow-400 text-yellow-400'
                                           : isOwnMessage
                                             ? 'text-white/30'
-                                            : 'text-[var(--foreground-tertiary)]'
+                                            : 'text-gray-300'
                                       }
                                     />
                                   ))}
