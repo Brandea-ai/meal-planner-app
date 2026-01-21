@@ -24,6 +24,16 @@ export interface UploadResult {
 }
 
 /**
+ * Check if browser supports WebP encoding
+ */
+function supportsWebP(): boolean {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  return canvas.toDataURL('image/webp').startsWith('data:image/webp');
+}
+
+/**
  * Compress an image file to reduce size while maintaining quality
  */
 export async function compressImage(file: File): Promise<CompressedImage> {
@@ -55,13 +65,30 @@ export async function compressImage(file: File): Promise<CompressedImage> {
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Determine output format (prefer WebP, fallback to JPEG)
-      const outputType: ChatMediaType = 'image/webp';
+      // Determine output format - use WebP if supported, otherwise JPEG
+      const useWebP = supportsWebP();
+      const outputType: ChatMediaType = useWebP ? 'image/webp' : 'image/jpeg';
 
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            reject(new Error('Image compression failed'));
+            // Fallback to JPEG if blob creation failed
+            canvas.toBlob(
+              (jpegBlob) => {
+                if (!jpegBlob) {
+                  reject(new Error('Image compression failed'));
+                  return;
+                }
+                resolve({
+                  blob: jpegBlob,
+                  width,
+                  height,
+                  mimeType: 'image/jpeg',
+                });
+              },
+              'image/jpeg',
+              QUALITY
+            );
             return;
           }
 
@@ -101,15 +128,8 @@ export async function compressImage(file: File): Promise<CompressedImage> {
       reject(new Error('Failed to load image'));
     };
 
-    // Load image from file
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'));
-    };
-    reader.readAsDataURL(file);
+    // Load image from file - use createObjectURL for better iOS compatibility
+    img.src = URL.createObjectURL(file);
   });
 }
 
@@ -136,7 +156,13 @@ export async function uploadImage(
   // Generate unique filename
   const timestamp = Date.now();
   const randomId = crypto.randomUUID().slice(0, 8);
-  const extension = compressed.mimeType === 'image/webp' ? 'webp' : 'jpg';
+  const extensionMap: Record<string, string> = {
+    'image/webp': 'webp',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+  };
+  const extension = extensionMap[compressed.mimeType] || 'jpg';
   const filename = `${deviceId}/${timestamp}-${randomId}.${extension}`;
 
   onProgress?.(40);
@@ -198,10 +224,25 @@ export async function deleteImage(url: string): Promise<void> {
 
 /**
  * Validate if a file is a valid image
+ * Accepts common image types including HEIC/HEIF from iPhone cameras
  */
 export function isValidImageFile(file: File): boolean {
-  const validTypes: ChatMediaType[] = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  return validTypes.includes(file.type as ChatMediaType);
+  const validTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/heic',      // iPhone camera format
+    'image/heif',      // iPhone camera format
+    'image/jpg',       // Alternative JPEG
+  ];
+
+  // Also check file extension as fallback (some browsers don't set MIME type correctly)
+  const extension = file.name.toLowerCase().split('.').pop();
+  const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
+
+  return validTypes.includes(file.type.toLowerCase()) ||
+         (extension ? validExtensions.includes(extension) : false);
 }
 
 /**

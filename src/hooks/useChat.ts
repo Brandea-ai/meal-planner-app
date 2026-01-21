@@ -573,14 +573,21 @@ export function useChat(): UseChatReturn {
 
   // Send an image message
   const sendImageMessage = useCallback(async (file: File, caption?: string) => {
-    // Validate file
-    if (!isValidImageFile(file)) {
-      setError('Nur Bilder (JPEG, PNG, WebP, GIF) sind erlaubt');
+    // Basic validation - check if it looks like an image
+    const isImage = file.type.startsWith('image/') ||
+                    file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|heic|heif)$/);
+
+    if (!isImage) {
+      setError('Bitte wähle ein Bild aus');
+      setUploadProgress({ status: 'error', progress: 0, error: 'Kein gültiges Bild' });
+      setTimeout(() => {
+        setUploadProgress({ status: 'idle', progress: 0 });
+      }, 3000);
       return;
     }
 
     try {
-      setUploadProgress({ status: 'compressing', progress: 0 });
+      setUploadProgress({ status: 'compressing', progress: 5 });
 
       // Upload the image
       const result = await uploadImage(file, (progress) => {
@@ -608,7 +615,7 @@ export function useChat(): UseChatReturn {
         setUploadProgress({ status: 'idle', progress: 0 });
       }, 500);
     } catch (e) {
-      console.warn('Failed to upload image:', e);
+      console.error('Failed to upload image:', e);
       const errorMessage = e instanceof Error ? e.message : 'Bild konnte nicht hochgeladen werden';
       setUploadProgress({ status: 'error', progress: 0, error: errorMessage });
       setError(errorMessage);

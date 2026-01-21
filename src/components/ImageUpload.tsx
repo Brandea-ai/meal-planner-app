@@ -27,15 +27,19 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file type
-    if (!file.type.startsWith('image/')) {
+    // Check file type - be lenient for iOS camera images
+    const isImage = file.type.startsWith('image/') ||
+                    file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|heic|heif)$/);
+
+    if (!isImage) {
       alert('Bitte wähle ein Bild aus');
       return;
     }
 
+    // Additional validation
     if (!isValidImageFile(file)) {
-      alert('Nur Bilder (JPEG, PNG, WebP, GIF) sind erlaubt');
-      return;
+      // Still allow if it looks like an image (iOS sometimes has wrong MIME types)
+      console.warn('File type not in allowed list, but proceeding:', file.type, file.name);
     }
 
     setSelectedFile(file);
