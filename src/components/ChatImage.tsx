@@ -172,45 +172,60 @@ export function ChatImage({
           </div>
         </div>
 
-        {/* Interactive rating directly in chat */}
+        {/* Interactive rating directly in chat - separate card */}
         {onRate && (
-          <div
-            className={`mt-2 flex items-center gap-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+          <motion.div
+            className={`mt-3 ${isOwnMessage ? 'ml-auto' : 'mr-auto'}`}
             onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
           >
-            <div className="flex gap-0.5">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <motion.button
-                  key={star}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRate(star);
-                  }}
-                  className="touch-manipulation p-0.5"
-                  whileTap={{ scale: 1.3 }}
-                >
-                  <Star
-                    size={18}
-                    className={`transition-all duration-150 ${
-                      star <= (rating || 0)
-                        ? 'fill-yellow-400 text-yellow-400 drop-shadow-sm'
-                        : isOwnMessage
-                          ? 'text-white/30 hover:text-yellow-400/60'
-                          : 'text-[var(--foreground-tertiary)]/40 hover:text-yellow-400/60'
-                    }`}
-                  />
-                </motion.button>
-              ))}
-            </div>
-            {rating && rating > 0 && (
-              <span className={`text-xs ${
-                isOwnMessage ? 'text-white/50' : 'text-[var(--foreground-tertiary)]'
+            <div className={`inline-flex items-center gap-3 px-4 py-2.5 rounded-full ${
+              isOwnMessage
+                ? 'bg-white/15 backdrop-blur-sm'
+                : 'bg-[var(--fill-secondary)] backdrop-blur-sm'
+            }`}>
+              <span className={`text-xs font-medium ${
+                isOwnMessage ? 'text-white/70' : 'text-[var(--foreground-secondary)]'
               }`}>
-                {rating === 5 ? '🎉' : rating === 4 ? '👍' : rating === 3 ? '👌' : rating === 2 ? '😕' : '😞'}
+                Bewerten:
               </span>
-            )}
-          </div>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <motion.button
+                    key={star}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRate(star);
+                    }}
+                    className="touch-manipulation p-1.5 -m-1 rounded-full active:bg-white/20"
+                    whileTap={{ scale: 1.2 }}
+                  >
+                    <Star
+                      size={22}
+                      className={`transition-all duration-150 ${
+                        star <= (rating || 0)
+                          ? 'fill-yellow-400 text-yellow-400 drop-shadow-sm'
+                          : isOwnMessage
+                            ? 'text-white/40'
+                            : 'text-[var(--foreground-tertiary)]/50'
+                      }`}
+                    />
+                  </motion.button>
+                ))}
+              </div>
+              {rating && rating > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="text-base"
+                >
+                  {rating === 5 ? '🎉' : rating === 4 ? '👍' : rating === 3 ? '👌' : rating === 2 ? '😕' : '😞'}
+                </motion.span>
+              )}
+            </div>
+          </motion.div>
         )}
       </motion.div>
 
