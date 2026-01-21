@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, getDeviceId } from '@/lib/supabase';
-import { ChatMessage, NewChatMessage, ChatExport, MealType } from '@/types';
+import { ChatMessage, NewChatMessage, ChatExport, MealType, ImageUploadProgress, ChatMediaType } from '@/types';
+import { uploadImage, deleteImage, isValidImageFile } from '@/lib/imageUpload';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import {
   encryptMessage,
@@ -39,6 +40,9 @@ interface UseChatReturn {
   // Refresh
   refreshChat: () => void;
   deviceId: string;
+  // Image upload
+  uploadProgress: ImageUploadProgress;
+  sendImageMessage: (file: File, caption?: string) => Promise<void>;
 }
 
 export function useChat(): UseChatReturn {
@@ -55,6 +59,12 @@ export function useChat(): UseChatReturn {
   const deviceIdRef = useRef<string>('');
   const passwordRef = useRef<string | null>(null);
   const firstMessageRef = useRef<string | null>(null);
+
+  // Image upload state
+  const [uploadProgress, setUploadProgress] = useState<ImageUploadProgress>({
+    status: 'idle',
+    progress: 0,
+  });
 
   // Auto-logout state
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
@@ -175,6 +185,10 @@ export function useChat(): UseChatReturn {
           rating: msg.rating,
           replyTo: msg.reply_to,
           isEdited: msg.is_edited || false,
+          mediaUrl: msg.media_url,
+          mediaType: msg.media_type as ChatMediaType | undefined,
+          mediaWidth: msg.media_width,
+          mediaHeight: msg.media_height,
           createdAt: msg.created_at,
           updatedAt: msg.updated_at,
         }));
@@ -239,6 +253,10 @@ export function useChat(): UseChatReturn {
               rating: newMsg.rating as number | undefined,
               replyTo: newMsg.reply_to as string | undefined,
               isEdited: (newMsg.is_edited as boolean) || false,
+              mediaUrl: newMsg.media_url as string | undefined,
+              mediaType: newMsg.media_type as ChatMediaType | undefined,
+              mediaWidth: newMsg.media_width as number | undefined,
+              mediaHeight: newMsg.media_height as number | undefined,
               createdAt: newMsg.created_at as string,
               updatedAt: newMsg.updated_at as string,
             };
@@ -273,6 +291,10 @@ export function useChat(): UseChatReturn {
               rating: updatedMsg.rating as number | undefined,
               replyTo: updatedMsg.reply_to as string | undefined,
               isEdited: (updatedMsg.is_edited as boolean) || false,
+              mediaUrl: updatedMsg.media_url as string | undefined,
+              mediaType: updatedMsg.media_type as ChatMediaType | undefined,
+              mediaWidth: updatedMsg.media_width as number | undefined,
+              mediaHeight: updatedMsg.media_height as number | undefined,
               createdAt: updatedMsg.created_at as string,
               updatedAt: updatedMsg.updated_at as string,
             };
@@ -360,12 +382,14 @@ export function useChat(): UseChatReturn {
   const sendMessage = useCallback(async (newMessage: NewChatMessage) => {
     const deviceId = deviceIdRef.current;
     const pwd = passwordRef.current;
-    if (!deviceId || !newMessage.message.trim()) return;
+
+    // Allow empty message if there's media attached
+    if (!deviceId || (!newMessage.message.trim() && !newMessage.mediaUrl)) return;
 
     try {
       // Encrypt the message if password is set
       let messageToSend = newMessage.message.trim();
-      if (pwd) {
+      if (pwd && messageToSend) {
         messageToSend = await encryptMessage(messageToSend, pwd);
       }
 
@@ -374,12 +398,16 @@ export function useChat(): UseChatReturn {
         .insert({
           device_id: deviceId,
           sender_name: newMessage.senderName || 'Anonym',
-          message: messageToSend,
+          message: messageToSend || '', // Empty string for image-only messages
           message_type: newMessage.messageType || 'text',
           meal_reference: newMessage.mealReference,
           meal_type: newMessage.mealType,
           rating: newMessage.rating,
           reply_to: newMessage.replyTo,
+          media_url: newMessage.mediaUrl,
+          media_type: newMessage.mediaType,
+          media_width: newMessage.mediaWidth,
+          media_height: newMessage.mediaHeight,
         });
 
       if (insertError) {
@@ -543,6 +571,55 @@ export function useChat(): UseChatReturn {
     setupRealtimeSubscription(deviceId);
   }, [loadMessages, setupRealtimeSubscription]);
 
+  // Send an image message
+  const sendImageMessage = useCallback(async (file: File, caption?: string) => {
+    // Validate file
+    if (!isValidImageFile(file)) {
+      setError('Nur Bilder (JPEG, PNG, WebP, GIF) sind erlaubt');
+      return;
+    }
+
+    try {
+      setUploadProgress({ status: 'compressing', progress: 0 });
+
+      // Upload the image
+      const result = await uploadImage(file, (progress) => {
+        if (progress < 30) {
+          setUploadProgress({ status: 'compressing', progress });
+        } else {
+          setUploadProgress({ status: 'uploading', progress });
+        }
+      });
+
+      setUploadProgress({ status: 'done', progress: 100 });
+
+      // Send the message with media
+      await sendMessage({
+        senderName: senderName || 'Anonym',
+        message: caption || '',
+        mediaUrl: result.url,
+        mediaType: result.mimeType,
+        mediaWidth: result.width,
+        mediaHeight: result.height,
+      });
+
+      // Reset upload state after a short delay
+      setTimeout(() => {
+        setUploadProgress({ status: 'idle', progress: 0 });
+      }, 500);
+    } catch (e) {
+      console.warn('Failed to upload image:', e);
+      const errorMessage = e instanceof Error ? e.message : 'Bild konnte nicht hochgeladen werden';
+      setUploadProgress({ status: 'error', progress: 0, error: errorMessage });
+      setError(errorMessage);
+
+      // Reset upload state after showing error
+      setTimeout(() => {
+        setUploadProgress({ status: 'idle', progress: 0 });
+      }, 3000);
+    }
+  }, [sendMessage, senderName]);
+
   // Start auto-logout timer when logged in
   useEffect(() => {
     // Only run if logged in (has password)
@@ -610,5 +687,8 @@ export function useChat(): UseChatReturn {
     // Refresh
     refreshChat,
     deviceId: currentDeviceId,
+    // Image upload
+    uploadProgress,
+    sendImageMessage,
   };
 }

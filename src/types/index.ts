@@ -204,6 +204,9 @@ export interface MealStatistics {
 // Chat Message Types
 export type ChatMessageType = 'text' | 'feedback' | 'suggestion';
 
+// Supported media types for chat
+export type ChatMediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+
 export interface ChatMessage {
   id: string;
   deviceId: string;
@@ -215,6 +218,11 @@ export interface ChatMessage {
   rating?: number; // 1-5 stars
   replyTo?: string; // ID of message being replied to
   isEdited?: boolean;
+  // Media support
+  mediaUrl?: string; // URL to image in Supabase Storage
+  mediaType?: ChatMediaType; // MIME type of the media
+  mediaWidth?: number; // Image width for proper rendering
+  mediaHeight?: number; // Image height for proper rendering
   createdAt: string;
   updatedAt: string;
 }
@@ -228,6 +236,18 @@ export interface NewChatMessage {
   mealType?: MealType;
   rating?: number;
   replyTo?: string;
+  // Media support
+  mediaUrl?: string;
+  mediaType?: ChatMediaType;
+  mediaWidth?: number;
+  mediaHeight?: number;
+}
+
+// For image upload progress tracking
+export interface ImageUploadProgress {
+  status: 'idle' | 'compressing' | 'uploading' | 'done' | 'error';
+  progress: number; // 0-100
+  error?: string;
 }
 
 // Call Types for WebRTC

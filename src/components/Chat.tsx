@@ -30,6 +30,8 @@ import { IncomingCall } from './IncomingCall';
 import { ActiveCall } from './ActiveCall';
 import { PasswordSetup } from './PasswordSetup';
 import { DeviceSync } from './DeviceSync';
+import { ImageUpload } from './ImageUpload';
+import { ChatImage } from './ChatImage';
 import { getDeviceId } from '@/lib/supabase';
 import { resetEncryption } from '@/lib/crypto';
 
@@ -61,6 +63,8 @@ export function Chat({ onBack }: ChatProps) {
     logout,
     remainingTime,
     refreshChat,
+    uploadProgress,
+    sendImageMessage,
   } = useChat();
 
   // Refresh chat when component mounts or becomes visible
@@ -677,8 +681,22 @@ export function Chat({ onBack }: ChatProps) {
                                 </div>
                               )}
 
+                              {/* Image if present */}
+                              {message.mediaUrl && (
+                                <div className="mb-2">
+                                  <ChatImage
+                                    src={message.mediaUrl}
+                                    width={message.mediaWidth}
+                                    height={message.mediaHeight}
+                                    isOwnMessage={isOwnMessage}
+                                  />
+                                </div>
+                              )}
+
                               {/* Message text */}
-                              <p className="text-[15px] leading-relaxed">{message.message}</p>
+                              {message.message && (
+                                <p className="text-[15px] leading-relaxed">{message.message}</p>
+                              )}
 
                               {/* Rating stars */}
                               {message.rating && (
@@ -865,6 +883,11 @@ export function Chat({ onBack }: ChatProps) {
           >
             <Star size={20} />
           </motion.button>
+          <ImageUpload
+            onUpload={sendImageMessage}
+            uploadProgress={uploadProgress}
+            disabled={!!editingMessage}
+          />
           <div className="relative flex-1">
             <input
               ref={inputRef}
