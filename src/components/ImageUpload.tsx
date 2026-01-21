@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ImagePlus, X, Loader2, Send } from 'lucide-react';
+import { ImagePlus, X, Loader2, Send, Camera, Image, FolderOpen } from 'lucide-react';
 import { ImageUploadProgress } from '@/types';
 import { isValidImageFile } from '@/lib/imageUpload';
 
@@ -17,11 +17,21 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [showPreview, setShowPreview] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showActionSheet, setShowActionSheet] = useState(false);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Separate refs for different input types (iOS compatibility)
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      alert('Bitte wähle ein Bild aus');
+      return;
+    }
 
     if (!isValidImageFile(file)) {
       alert('Nur Bilder (JPEG, PNG, WebP, GIF) sind erlaubt');
@@ -31,12 +41,12 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
     setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
     setShowPreview(true);
+    setShowActionSheet(false);
 
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+    // Reset inputs
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  }, []);
 
   const handleSend = async () => {
     if (!selectedFile) return;
@@ -63,15 +73,36 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
     setShowPreview(false);
   };
 
+  const openGallery = () => {
+    galleryInputRef.current?.click();
+  };
+
+  const openCamera = () => {
+    cameraInputRef.current?.click();
+  };
+
   const isUploading = uploadProgress.status === 'compressing' || uploadProgress.status === 'uploading';
 
   return (
     <>
-      {/* Hidden file input */}
+      {/* Hidden file inputs - separate for iOS compatibility */}
+
+      {/* Gallery/Photo Library Input */}
       <input
-        ref={fileInputRef}
+        ref={galleryInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+        disabled={disabled || isUploading}
+      />
+
+      {/* Camera Input - iOS will show camera directly */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled || isUploading}
@@ -79,7 +110,7 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
 
       {/* Upload button */}
       <motion.button
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => setShowActionSheet(true)}
         disabled={disabled || isUploading}
         className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full glass-inner text-[var(--foreground-secondary)] disabled:opacity-50"
         aria-label="Bild senden"
@@ -91,6 +122,69 @@ export function ImageUpload({ onUpload, uploadProgress, disabled }: ImageUploadP
           <ImagePlus size={20} />
         )}
       </motion.button>
+
+      {/* iOS-style Action Sheet */}
+      <AnimatePresence>
+        {showActionSheet && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowActionSheet(false)}
+            />
+
+            {/* Action Sheet */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              className="fixed bottom-0 left-0 right-0 z-[101] p-3 pb-safe"
+            >
+              {/* Options */}
+              <div className="glass-card overflow-hidden mb-2">
+                <button
+                  onClick={openCamera}
+                  className="flex w-full items-center gap-4 p-4 text-left active:bg-[var(--vibrancy-regular)] border-b border-[var(--glass-border)]"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-blue)]/15">
+                    <Camera size={20} className="text-[var(--system-blue)]" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[var(--foreground)]">Foto aufnehmen</p>
+                    <p className="text-xs text-[var(--foreground-tertiary)]">Mit der Kamera fotografieren</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={openGallery}
+                  className="flex w-full items-center gap-4 p-4 text-left active:bg-[var(--vibrancy-regular)]"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--system-green)]/15">
+                    <Image size={20} className="text-[var(--system-green)]" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[var(--foreground)]">Aus Mediathek wählen</p>
+                    <p className="text-xs text-[var(--foreground-tertiary)]">Foto aus der Galerie auswählen</p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Cancel Button */}
+              <motion.button
+                onClick={() => setShowActionSheet(false)}
+                className="w-full glass-card p-4 text-center font-semibold text-[var(--system-blue)]"
+                whileTap={{ scale: 0.98 }}
+              >
+                Abbrechen
+              </motion.button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Preview Modal */}
       <AnimatePresence>
